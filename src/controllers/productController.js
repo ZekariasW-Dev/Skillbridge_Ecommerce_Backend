@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const { createResponse, createPaginatedResponse } = require('../utils/responses');
+const { createResponse, createPaginatedResponse, createProductListResponse } = require('../utils/responses');
 const { validateProduct, validateProductUpdate } = require('../utils/validation');
 
 /**
@@ -181,23 +181,69 @@ const updateProduct = async (req, res) => {
 };
 
 /**
- * Get All Products endpoint (Public)
+ * Get All Products endpoint - User Story 5
  * GET /products
+ * 
+ * Acceptance Criteria:
+ * 1. GET request to /products retrieves list of all products
+ * 2. Public endpoint - accessible without authentication
+ * 3. Supports pagination with query parameters:
+ *    - page: page number (defaults to 1)
+ *    - limit or pageSize: items per page (defaults to 10)
+ * 4. JSON response in paginated format with:
+ *    - currentPage: current page number being displayed
+ *    - pageSize: number of items on current page
+ *    - totalPages: total number of pages based on page size
+ *    - totalProducts: total count of all products in database
+ *    - products: array of product objects for current page
+ * 5. Each product contains: id, name, price, stock, category
  */
 const getAllProducts = async (req, res) => {
   try {
+    // Parse pagination parameters (User Story 5 requirements)
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit || req.query.pageSize) || 10;
-    const search = req.query.search || '';
+    const pageSize = parseInt(req.query.limit || req.query.pageSize) || 10;
     
-    const result = await Product.findAll(page, limit, search);
+    // Validate pagination parameters
+    if (page < 1) {
+      return res.status(400).json(createResponse(
+        false,
+        'Invalid pagination parameters',
+        null,
+        ['Page number must be 1 or greater']
+      ));
+    }
     
-    res.status(200).json(createPaginatedResponse(
+    if (pageSize < 1 || pageSize > 100) {
+      return res.status(400).json(createResponse(
+        false,
+        'Invalid pagination parameters',
+        null,
+        ['Page size must be between 1 and 100']
+      ));
+    }
+    
+    // Get products with pagination
+    const result = await Product.findAll(page, pageSize);
+    
+    // Format products to include essential information (User Story 5 requirement)
+    const formattedProducts = result.products.map(product => ({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      stock: product.stock,
+      category: product.category,
+      createdAt: product.createdAt
+    }));
+    
+    // Return User Story 5 compliant response format
+    res.status(200).json(createProductListResponse(
       true,
       'Products retrieved successfully',
-      result.products,
+      formattedProducts,
       page,
-      limit,
+      pageSize,
       result.totalSize
     ));
     
