@@ -1,6 +1,6 @@
 const Product = require('../models/Product');
 const { createResponse, createPaginatedResponse } = require('../utils/responses');
-const { validateProduct } = require('../utils/validation');
+const { validateProduct, validateProductUpdate } = require('../utils/validation');
 
 /**
  * Create Product endpoint - User Story 3
@@ -73,24 +73,43 @@ const createProduct = async (req, res) => {
 };
 
 /**
- * Update Product endpoint
+ * Update Product endpoint - User Story 4
  * PUT /products/:id
- * Admin only
+ * 
+ * Acceptance Criteria:
+ * 1. Admin sends PUT request to /products/:id with optional fields to update
+ * 2. Protected endpoint - only authenticated Admin users can access
+ * 3. Any provided field must meet same validation criteria as product creation
+ * 4. Returns 404 Not Found if product doesn't exist
+ * 5. Returns 400 Bad Request for validation failures with clear error messages
+ * 6. Returns 200 OK with updated product data on success
+ * 7. Returns 401 Unauthorized for unauthenticated users
+ * 8. Returns 403 Forbidden for non-admin users
  */
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = {};
     
-    // Only include provided fields for partial updates
+    // Only include provided fields for partial updates (User Story 4 requirement)
     if (req.body.name !== undefined) updateData.name = req.body.name;
     if (req.body.description !== undefined) updateData.description = req.body.description;
     if (req.body.price !== undefined) updateData.price = req.body.price;
     if (req.body.stock !== undefined) updateData.stock = req.body.stock;
     if (req.body.category !== undefined) updateData.category = req.body.category;
     
-    // Validate provided fields
-    const validationErrors = validateProduct(updateData);
+    // Check if any fields were provided for update
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json(createResponse(
+        false, 
+        'Product update failed', 
+        null, 
+        ['At least one field must be provided for update']
+      ));
+    }
+    
+    // Validate provided fields using User Story 4 validation (same criteria as creation)
+    const validationErrors = validateProductUpdate(updateData);
     
     if (validationErrors.length > 0) {
       return res.status(400).json(createResponse(
@@ -101,20 +120,38 @@ const updateProduct = async (req, res) => {
       ));
     }
     
-    // Check if product exists
+    // Check if product exists (User Story 4 requirement)
     const existingProduct = await Product.findById(id);
     if (!existingProduct) {
       return res.status(404).json(createResponse(
         false, 
         'Product not found', 
         null, 
-        ['Product does not exist']
+        ['Product with the specified ID does not exist']
       ));
     }
     
-    // Update product
-    const updatedProduct = await Product.update(id, updateData);
+    // Prepare update data with proper data types
+    const processedUpdateData = {};
+    if (updateData.name !== undefined) processedUpdateData.name = updateData.name.trim();
+    if (updateData.description !== undefined) processedUpdateData.description = updateData.description.trim();
+    if (updateData.price !== undefined) processedUpdateData.price = parseFloat(updateData.price);
+    if (updateData.stock !== undefined) processedUpdateData.stock = parseInt(updateData.stock);
+    if (updateData.category !== undefined) processedUpdateData.category = updateData.category.trim();
     
+    // Update product
+    const updatedProduct = await Product.update(id, processedUpdateData);
+    
+    if (!updatedProduct) {
+      return res.status(500).json(createResponse(
+        false, 
+        'Product update failed', 
+        null, 
+        ['Failed to update product']
+      ));
+    }
+    
+    // Return 200 OK with updated product data (User Story 4 requirement)
     res.status(200).json(createResponse(
       true, 
       'Product updated successfully', 
@@ -123,6 +160,17 @@ const updateProduct = async (req, res) => {
     
   } catch (error) {
     console.error('Update product error:', error);
+    
+    // Handle MongoDB errors
+    if (error.code === 11000) {
+      return res.status(400).json(createResponse(
+        false, 
+        'Product update failed', 
+        null, 
+        ['A product with this information already exists']
+      ));
+    }
+    
     res.status(500).json(createResponse(
       false, 
       'Internal server error', 

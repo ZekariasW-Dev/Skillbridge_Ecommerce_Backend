@@ -9,7 +9,8 @@
     "setup-admin": "node setup-admin.js",
     "test-api": "node test-api.js",
     "test-login": "node test-login.js",
-    "test-create-product": "node test-create-product.js"
+    "test-create-product": "node test-create-product.js",
+    "test-update-product": "node test-update-product.js"
   },
   "dependencies": {
     "express": "^4.18.2",
