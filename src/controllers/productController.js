@@ -181,28 +181,28 @@ const updateProduct = async (req, res) => {
 };
 
 /**
- * Get All Products endpoint - User Story 5
+ * Get All Products endpoint - User Stories 5 & 6
  * GET /products
  * 
- * Acceptance Criteria:
+ * User Story 5 - Get List of Products:
  * 1. GET request to /products retrieves list of all products
  * 2. Public endpoint - accessible without authentication
- * 3. Supports pagination with query parameters:
- *    - page: page number (defaults to 1)
- *    - limit or pageSize: items per page (defaults to 10)
- * 4. JSON response in paginated format with:
- *    - currentPage: current page number being displayed
- *    - pageSize: number of items on current page
- *    - totalPages: total number of pages based on page size
- *    - totalProducts: total count of all products in database
- *    - products: array of product objects for current page
- * 5. Each product contains: id, name, price, stock, category
+ * 3. Supports pagination with query parameters
+ * 
+ * User Story 6 - Search for Products:
+ * 1. Accepts ?search=productName query parameter
+ * 2. Empty or missing search returns all products (User Story 5 behavior)
+ * 3. Non-empty search performs case-insensitive, partial-match against product name
+ * 4. totalProducts reflects search results count, not all products
  */
 const getAllProducts = async (req, res) => {
   try {
     // Parse pagination parameters (User Story 5 requirements)
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.limit || req.query.pageSize) || 10;
+    
+    // Parse search parameter (User Story 6 requirement)
+    const search = req.query.search || '';
     
     // Validate pagination parameters
     if (page < 1) {
@@ -223,8 +223,8 @@ const getAllProducts = async (req, res) => {
       ));
     }
     
-    // Get products with pagination
-    const result = await Product.findAll(page, pageSize);
+    // Get products with pagination and optional search (User Stories 5 & 6)
+    const result = await Product.findAll(page, pageSize, search);
     
     // Format products to include essential information (User Story 5 requirement)
     const formattedProducts = result.products.map(product => ({
@@ -237,10 +237,17 @@ const getAllProducts = async (req, res) => {
       createdAt: product.createdAt
     }));
     
-    // Return User Story 5 compliant response format
+    // Determine response message based on search (User Story 6)
+    let message = 'Products retrieved successfully';
+    if (search && search.trim().length > 0) {
+      message = `Products matching "${search.trim()}" retrieved successfully`;
+    }
+    
+    // Return User Stories 5 & 6 compliant response format
+    // totalProducts reflects search results count (User Story 6 requirement)
     res.status(200).json(createProductListResponse(
       true,
-      'Products retrieved successfully',
+      message,
       formattedProducts,
       page,
       pageSize,

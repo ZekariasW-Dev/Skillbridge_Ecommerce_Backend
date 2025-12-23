@@ -11,7 +11,8 @@
     "test-login": "node test-login.js",
     "test-create-product": "node test-create-product.js",
     "test-update-product": "node test-update-product.js",
-    "test-get-products": "node test-get-products.js"
+    "test-get-products": "node test-get-products.js",
+    "test-search-products": "node test-search-products.js"
   },
   "dependencies": {
     "express": "^4.18.2",

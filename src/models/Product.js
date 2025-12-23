@@ -43,24 +43,33 @@ class Product {
   }
 
   /**
-   * Find all products with pagination (User Story 5)
+   * Find all products with pagination and optional search (User Stories 5 & 6)
    * @param {number} page - Page number (default: 1)
    * @param {number} limit - Items per page (default: 10)
+   * @param {string} search - Search term for product name (optional, User Story 6)
    * @returns {object} - Object containing products array and total count
    */
-  static async findAll(page = 1, limit = 10) {
+  static async findAll(page = 1, limit = 10, search = '') {
     const skip = (page - 1) * limit;
     
-    // Get products for current page
+    // Build query based on search parameter (User Story 6)
+    let query = {};
+    if (search && search.trim().length > 0) {
+      // Case-insensitive, partial-match (substring) search against product name
+      query.name = { $regex: search.trim(), $options: 'i' };
+    }
+    
+    // Get products for current page with search filter
     const products = await db.getCollection('products')
-      .find({})
+      .find(query)
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 }) // Most recent first
       .toArray();
     
-    // Get total count of all products
-    const totalSize = await db.getCollection('products').countDocuments({});
+    // Get total count of products matching search criteria
+    // (User Story 6: totalProducts should reflect search results, not all products)
+    const totalSize = await db.getCollection('products').countDocuments(query);
     
     return {
       products,
