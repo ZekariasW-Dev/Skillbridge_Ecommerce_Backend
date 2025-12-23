@@ -333,40 +333,60 @@ const getProductById = async (req, res) => {
 };
 
 /**
- * Delete Product endpoint
+ * Delete Product endpoint - User Story 8
  * DELETE /products/:id
- * Admin only
+ * 
+ * Acceptance Criteria:
+ * 1. Admin sends DELETE request to /products/:id to permanently delete product
+ * 2. Protected endpoint - only authenticated Admin users can access
+ * 3. Success: 200 OK with confirmation message "Product deleted successfully"
+ * 4. Failure: 404 Not Found if product doesn't exist
+ * 5. Authorization: 401 Unauthorized for unauthenticated users, 403 Forbidden for non-admin users
  */
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Check if product exists
-    const existingProduct = await Product.findById(id);
+    // Validate that id parameter is provided
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json(createResponse(
+        false, 
+        'Invalid request', 
+        null, 
+        ['Product ID is required in the URL path']
+      ));
+    }
+    
+    // Check if product exists (User Story 8 requirement)
+    const existingProduct = await Product.findById(id.trim());
     if (!existingProduct) {
       return res.status(404).json(createResponse(
         false, 
         'Product not found', 
         null, 
-        ['Product does not exist']
+        ['Product with the specified ID does not exist']
       ));
     }
     
-    // Delete product
-    const deleted = await Product.delete(id);
+    // Permanently delete product from catalog (User Story 8 requirement)
+    const deleted = await Product.delete(id.trim());
     
     if (deleted) {
+      // Return 200 OK with confirmation message (User Story 8 requirement)
       res.status(200).json(createResponse(
         true, 
         'Product deleted successfully', 
-        null
+        {
+          deletedProductId: id.trim(),
+          deletedProductName: existingProduct.name
+        }
       ));
     } else {
       res.status(500).json(createResponse(
         false, 
         'Product deletion failed', 
         null, 
-        ['Failed to delete product']
+        ['Failed to delete product from catalog']
       ));
     }
     
