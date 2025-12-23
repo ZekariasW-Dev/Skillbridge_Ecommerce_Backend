@@ -93,6 +93,7 @@ const register = async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
+        role: user.role,
         createdAt: user.createdAt
       }
     ));
@@ -123,12 +124,20 @@ const register = async (req, res) => {
 /**
  * User login endpoint
  * POST /auth/login
+ * 
+ * User Story 2 - Login
+ * Acceptance Criteria:
+ * 1. User provides email and password credentials
+ * 2. System finds user by email and validates password against stored hash
+ * 3. Returns 401 Unauthorized for invalid credentials with "Invalid credentials" message
+ * 4. Returns 400 Bad Request for invalid input (e.g., incorrect email format)
+ * 5. Returns 200 OK with JWT containing userId, username, and role on success
  */
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    // Validation
+    // Input validation - check if credentials are provided
     if (!email || !password) {
       return res.status(400).json(createResponse(
         false, 
@@ -138,48 +147,52 @@ const login = async (req, res) => {
       ));
     }
     
+    // Input validation - check email format
     if (!validateEmail(email)) {
       return res.status(400).json(createResponse(
         false, 
         'Login failed', 
         null, 
-        ['Email must be a valid email address format']
+        ['Email is not in the correct format']
       ));
     }
     
-    // Find user
+    // Authentication Process: Find user in database by email address
     const user = await User.findByEmail(email);
     if (!user) {
       return res.status(401).json(createResponse(
         false, 
-        'Invalid credentials', 
+        'Authentication failed', 
         null, 
-        ['Email or password is incorrect']
+        ['Invalid credentials']
       ));
     }
     
-    // Validate password
+    // Authentication Process: Compare submitted password against stored hashed password
     const isValidPassword = await User.validatePassword(password, user.password);
     if (!isValidPassword) {
       return res.status(401).json(createResponse(
         false, 
-        'Invalid credentials', 
+        'Authentication failed', 
         null, 
-        ['Email or password is incorrect']
+        ['Invalid credentials']
       ));
     }
     
-    // Generate JWT
+    // Successful Login: Generate JWT with essential, non-sensitive user information
+    const jwtPayload = {
+      userId: user.id,
+      username: user.username,
+      role: user.role || 'user' // Default role if not set
+    };
+    
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        username: user.username, 
-        email: user.email 
-      },
+      jwtPayload,
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
     
+    // Return 200 OK with JWT for client to use in subsequent requests
     res.status(200).json(createResponse(
       true, 
       'Login successful', 
@@ -188,7 +201,8 @@ const login = async (req, res) => {
         user: {
           id: user.id,
           username: user.username,
-          email: user.email
+          email: user.email,
+          role: user.role || 'user'
         }
       }
     ));

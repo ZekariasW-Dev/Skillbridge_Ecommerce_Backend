@@ -27,9 +27,10 @@ const createAdminUser = async () => {
     // Create admin user
     await db.getCollection('users').insertOne(adminData);
     
-    console.log('Admin user created successfully');
-    console.log('Email: admin@example.com');
-    console.log('Password: AdminPass123!');
+    console.log('✅ Admin user created successfully');
+    console.log('📧 Email: admin@example.com');
+    console.log('🔑 Password: AdminPass123!');
+    console.log('👤 Role: admin');
     
   } catch (error) {
     console.error('Error creating admin user:', error);

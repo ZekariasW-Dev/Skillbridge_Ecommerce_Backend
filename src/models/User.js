@@ -9,10 +9,11 @@ class User {
    * @param {string} userData.username - Username (alphanumeric only)
    * @param {string} userData.email - Email address
    * @param {string} userData.password - Plain text password (will be hashed)
+   * @param {string} userData.role - User role (default: 'user')
    * @returns {object} - Created user object without password
    */
   static async create(userData) {
-    const { username, email, password } = userData;
+    const { username, email, password, role = 'user' } = userData;
     const id = uuidv4();
     const hashedPassword = await bcrypt.hash(password, 10);
     
@@ -21,6 +22,7 @@ class User {
       username,
       email,
       password: hashedPassword,
+      role,
       createdAt: new Date()
     };
     
