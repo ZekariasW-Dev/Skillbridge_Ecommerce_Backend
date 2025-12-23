@@ -14,7 +14,8 @@
     "test-get-products": "node test-get-products.js",
     "test-search-products": "node test-search-products.js",
     "test-get-product-details": "node test-get-product-details.js",
-    "test-delete-product": "node test-delete-product.js"
+    "test-delete-product": "node test-delete-product.js",
+    "test-place-order": "node test-place-order.js"
   },
   "dependencies": {
     "express": "^4.18.2",
