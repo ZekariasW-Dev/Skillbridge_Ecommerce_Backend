@@ -15,7 +15,8 @@
     "test-search-products": "node test-search-products.js",
     "test-get-product-details": "node test-get-product-details.js",
     "test-delete-product": "node test-delete-product.js",
-    "test-place-order": "node test-place-order.js"
+    "test-place-order": "node test-place-order.js",
+    "test-view-order-history": "node test-view-order-history.js"
   },
   "dependencies": {
     "express": "^4.18.2",

@@ -172,39 +172,53 @@ const createOrder = async (req, res) => {
 };
 
 /**
- * Get My Orders endpoint - User Story 10 (View Order History)
+ * View My Order History endpoint - User Story 10
  * GET /orders
+ * 
+ * Acceptance Criteria:
+ * 1. GET request to /orders retrieves list of user's orders
+ * 2. Protected endpoint - only authenticated users can access
+ * 3. Filter results to show only orders belonging to authenticated user (userId from JWT)
+ * 4. Success: 200 OK with array of order objects (order_id, status, total_price, created_at)
+ * 5. Empty array if user has no orders (200 OK)
+ * 6. Failure: 401 Unauthorized for unauthenticated users
  */
 const getMyOrders = async (req, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user.userId; // From JWT token (authenticated user)
     
+    // Retrieve orders belonging only to authenticated user (User Story 10 requirement)
     const orders = await Order.findByUserId(userId);
     
-    // Format orders with consistent field names
-    const ordersWithProducts = orders.map(order => ({
-      order_id: order.id,
-      userId: order.userId,
-      description: order.description,
-      total_price: order.totalPrice,
+    // Format orders with key summary information (User Story 10 requirement)
+    const orderHistory = orders.map(order => ({
+      order_id: order.id, // User Story 10 uses 'order_id'
       status: order.status,
-      createdAt: order.createdAt,
+      total_price: order.totalPrice, // User Story 10 uses 'total_price'
+      created_at: order.createdAt, // User Story 10 uses 'created_at'
+      description: order.description,
       products: order.products || []
     }));
     
+    // Return 200 OK with array of orders (User Story 10 requirement)
+    // If user has no orders, return empty array with 200 OK (User Story 10 requirement)
+    const message = orderHistory.length > 0 
+      ? `Retrieved ${orderHistory.length} order${orderHistory.length > 1 ? 's' : ''} successfully`
+      : 'No orders found for this user';
+    
     res.status(200).json(createResponse(
       true, 
-      'Orders retrieved successfully', 
-      ordersWithProducts
+      message, 
+      orderHistory
     ));
     
   } catch (error) {
-    console.error('Get orders error:', error);
+    console.error('Get my orders error:', error);
     res.status(500).json(createResponse(
       false, 
       'Internal server error', 
       null, 
-      ['Failed to retrieve orders']
+      ['Failed to retrieve order history']
     ));
   }
 };
