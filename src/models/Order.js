@@ -2,8 +2,19 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../config/db');
 
 class Order {
+  /**
+   * Create a new order
+   * @param {object} orderData - Order data object
+   * @param {string} orderData.userId - User ID (foreign key)
+   * @param {string} orderData.description - Order description
+   * @param {number} orderData.totalPrice - Total price of the order
+   * @param {string} orderData.status - Order status
+   * @param {array} orderData.products - List of ordered products
+   * @param {object} session - MongoDB session for transactions
+   * @returns {object} - Created order object
+   */
   static async create(orderData, session = null) {
-    const { userId, description, totalPrice, status = 'pending', products = [] } = orderData;
+    const { userId, description, totalPrice, status, products = [] } = orderData;
     const id = uuidv4();
     
     const order = {
@@ -22,10 +33,20 @@ class Order {
     return order;
   }
 
+  /**
+   * Find order by ID
+   * @param {string} id - Order UUID
+   * @returns {object|null} - Order object or null if not found
+   */
   static async findById(id) {
     return await db.getCollection('orders').findOne({ id });
   }
 
+  /**
+   * Find all orders for a specific user
+   * @param {string} userId - User UUID
+   * @returns {array} - Array of order objects
+   */
   static async findByUserId(userId) {
     return await db.getCollection('orders')
       .find({ userId })
@@ -33,6 +54,11 @@ class Order {
       .toArray();
   }
 
+  /**
+   * Get order with products (same as findById since products are embedded)
+   * @param {string} orderId - Order UUID
+   * @returns {object|null} - Order object with products or null if not found
+   */
   static async getOrderWithProducts(orderId) {
     return await db.getCollection('orders').findOne({ id: orderId });
   }
