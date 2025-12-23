@@ -57,30 +57,43 @@ const validateUsername = (username) => {
 };
 
 /**
- * Validate product data
+ * Validate product data according to User Story 3 requirements
  * @param {object} product - Product object to validate
  * @returns {string[]} - Array of validation error messages
  */
 const validateProduct = (product) => {
   const errors = [];
   
-  if (!product.name || product.name.trim().length === 0) {
+  // name: Must be a non-empty string (between 3 and 100 characters)
+  if (!product.name || typeof product.name !== 'string' || product.name.trim().length === 0) {
     errors.push('Product name is required');
+  } else if (product.name.trim().length < 3 || product.name.trim().length > 100) {
+    errors.push('Product name must be between 3 and 100 characters');
   }
   
-  if (!product.description || product.description.trim().length === 0) {
+  // description: Must be a non-empty string (at least 10 characters long)
+  if (!product.description || typeof product.description !== 'string' || product.description.trim().length === 0) {
     errors.push('Product description is required');
+  } else if (product.description.trim().length < 10) {
+    errors.push('Product description must be at least 10 characters long');
   }
   
-  if (product.price === undefined || product.price === null || product.price <= 0) {
-    errors.push('Product price must be a positive number');
+  // price: Must be a positive number greater than 0
+  if (product.price === undefined || product.price === null) {
+    errors.push('Product price is required');
+  } else if (typeof product.price !== 'number' || product.price <= 0) {
+    errors.push('Product price must be a positive number greater than 0');
   }
   
-  if (product.stock === undefined || product.stock === null || product.stock < 0 || !Number.isInteger(product.stock)) {
-    errors.push('Product stock must be a non-negative integer');
+  // stock: Must be a non-negative integer (0 or more)
+  if (product.stock === undefined || product.stock === null) {
+    errors.push('Product stock is required');
+  } else if (!Number.isInteger(product.stock) || product.stock < 0) {
+    errors.push('Product stock must be a non-negative integer (0 or more)');
   }
   
-  if (!product.category || product.category.trim().length === 0) {
+  // category: Required field
+  if (!product.category || typeof product.category !== 'string' || product.category.trim().length === 0) {
     errors.push('Product category is required');
   }
   
