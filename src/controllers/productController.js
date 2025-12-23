@@ -266,37 +266,68 @@ const getAllProducts = async (req, res) => {
 };
 
 /**
- * Get Product by ID endpoint (Public)
+ * Get Product by ID endpoint - User Story 7
  * GET /products/:id
+ * 
+ * Acceptance Criteria:
+ * 1. GET request to /products/:id retrieves details for specific product
+ * 2. Public endpoint - accessible to all users without authentication
+ * 3. Product id must be included in URL path
+ * 4. Success: 200 OK with complete product object (id, name, description, price, stock, category)
+ * 5. Failure: 404 Not Found with clear error message if product not found
  */
 const getProductById = async (req, res) => {
   try {
     const { id } = req.params;
     
-    const product = await Product.findById(id);
+    // Validate that id parameter is provided
+    if (!id || id.trim().length === 0) {
+      return res.status(400).json(createResponse(
+        false, 
+        'Invalid request', 
+        null, 
+        ['Product ID is required in the URL path']
+      ));
+    }
     
+    // Find product by ID (User Story 7 requirement)
+    const product = await Product.findById(id.trim());
+    
+    // Handle product not found (User Story 7 requirement)
     if (!product) {
       return res.status(404).json(createResponse(
         false, 
         'Product not found', 
         null, 
-        ['Product does not exist']
+        ['Product not found']
       ));
     }
     
+    // Return 200 OK with complete product object (User Story 7 requirement)
+    // Include all product details: id, name, description, price, stock, category
     res.status(200).json(createResponse(
       true, 
-      'Product retrieved successfully', 
-      product
+      'Product details retrieved successfully', 
+      {
+        id: product.id,
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        stock: product.stock,
+        category: product.category,
+        userId: product.userId,
+        createdAt: product.createdAt,
+        updatedAt: product.updatedAt
+      }
     ));
     
   } catch (error) {
-    console.error('Get product error:', error);
+    console.error('Get product by ID error:', error);
     res.status(500).json(createResponse(
       false, 
       'Internal server error', 
       null, 
-      ['Failed to retrieve product']
+      ['Failed to retrieve product details']
     ));
   }
 };
