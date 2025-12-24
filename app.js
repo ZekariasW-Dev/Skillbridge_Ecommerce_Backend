@@ -11,6 +11,7 @@ const {
 const authRoutes = require('./src/routes/auth');
 const productRoutes = require('./src/routes/products');
 const orderRoutes = require('./src/routes/orders');
+const imageRoutes = require('./src/routes/images');
 
 const app = express();
 
@@ -38,6 +39,7 @@ if (process.env.NODE_ENV !== 'production') {
 app.use('/auth', authRoutes);
 app.use('/products', productRoutes);
 app.use('/orders', orderRoutes);
+app.use('/images', imageRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -59,6 +61,7 @@ app.get('/', (req, res) => {
       authentication: '/auth (POST /register, POST /login)',
       products: '/products (GET, POST, PUT, DELETE)',
       orders: '/orders (GET, POST)',
+      images: '/images (POST /products/:id/image, DELETE /products/:id/image)',
       health: '/health'
     },
     documentation: 'See README.md for detailed API documentation'

@@ -54,7 +54,9 @@
   "license": "MIT",
   "jest": {
     "testEnvironment": "node",
-    "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/__tests__/setup.js"
+    ],
     "testMatch": [
       "**/__tests__/**/*.test.js",
       "**/?(*.)+(spec|test).js"
