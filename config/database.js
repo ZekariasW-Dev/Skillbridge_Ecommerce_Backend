@@ -9,6 +9,9 @@
 
 const { MongoClient } = require('mongodb');
 
+// Load environment configuration
+const { config } = require('./environment');
+
 class DatabaseConfig {
   constructor() {
     this.client = null;
@@ -17,12 +20,11 @@ class DatabaseConfig {
     
     // Connection configuration
     this.config = {
-      uri: process.env.MONGODB_URI,
+      uri: config.mongoUri,
       options: {
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        bufferMaxEntries: 0,
         retryWrites: true,
         w: 'majority'
       }

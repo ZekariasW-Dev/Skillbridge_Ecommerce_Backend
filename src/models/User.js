@@ -1,6 +1,6 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcrypt');
-const db = require('../config/db');
+const db = require('../../config/database');
 
 class User {
   /**
@@ -26,7 +26,7 @@ class User {
       createdAt: new Date()
     };
     
-    await db.getCollection('users').insertOne(user);
+    await db.getDb().collection('users').insertOne(user);
     
     // Return user without password (sensitive information must never be returned)
     const { password: _, ...userWithoutPassword } = user;
@@ -39,7 +39,7 @@ class User {
    * @returns {object|null} - User object or null if not found
    */
   static async findByEmail(email) {
-    return await db.getCollection('users').findOne({ email });
+    return await db.getDb().collection('users').findOne({ email });
   }
 
   /**
@@ -48,7 +48,7 @@ class User {
    * @returns {object|null} - User object or null if not found
    */
   static async findByUsername(username) {
-    return await db.getCollection('users').findOne({ username });
+    return await db.getDb().collection('users').findOne({ username });
   }
 
   /**
@@ -57,7 +57,7 @@ class User {
    * @returns {object|null} - User object without password or null if not found
    */
   static async findById(id) {
-    return await db.getCollection('users').findOne(
+    return await db.getDb().collection('users').findOne(
       { id }, 
       { projection: { password: 0 } }
     );

@@ -1,7 +1,7 @@
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
-const db = require('./src/config/db');
+const db = require('../config/database');
 
 const createAdminUser = async () => {
   try {
@@ -20,7 +20,7 @@ const createAdminUser = async () => {
     };
     
     // Check if admin already exists
-    const existingAdmin = await db.getCollection('users').findOne({ email: adminData.email });
+    const existingAdmin = await db.getDb().collection('users').findOne({ email: adminData.email });
     
     if (existingAdmin) {
       console.log('Admin user already exists');
@@ -32,7 +32,7 @@ const createAdminUser = async () => {
     }
     
     // Create admin user
-    await db.getCollection('users').insertOne(adminData);
+    await db.getDb().collection('users').insertOne(adminData);
     
     console.log('✅ Admin user created successfully');
     console.log('📧 Email: admin@example.com');
@@ -49,7 +49,7 @@ const createAdminUser = async () => {
   } catch (error) {
     console.error('Error creating admin user:', error);
   } finally {
-    await db.close();
+    await db.disconnect();
   }
 };
 

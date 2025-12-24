@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/db');
+const db = require('../../config/database');
 
 class Product {
   /**
@@ -30,7 +30,7 @@ class Product {
       createdAt: new Date()
     };
     
-    await db.getCollection('products').insertOne(product);
+    await db.getDb().collection('products').insertOne(product);
     
     return product;
   }
@@ -41,7 +41,7 @@ class Product {
    * @returns {object|null} - Product object or null if not found
    */
   static async findById(id) {
-    return await db.getCollection('products').findOne({ id });
+    return await db.getDb().collection('products').findOne({ id });
   }
 
   /**
@@ -62,7 +62,7 @@ class Product {
     }
     
     // Get products for current page with search filter
-    const products = await db.getCollection('products')
+    const products = await db.getDb().collection('products')
       .find(query)
       .skip(skip)
       .limit(limit)
@@ -71,7 +71,7 @@ class Product {
     
     // Get total count of products matching search criteria
     // (User Story 6: totalProducts should reflect search results, not all products)
-    const totalSize = await db.getCollection('products').countDocuments(query);
+    const totalSize = await db.getDb().collection('products').countDocuments(query);
     
     return {
       products,
@@ -86,7 +86,7 @@ class Product {
    * @returns {object|null} - Updated product object or null if not found
    */
   static async update(id, updateData) {
-    const result = await db.getCollection('products').findOneAndUpdate(
+    const result = await db.getDb().collection('products').findOneAndUpdate(
       { id },
       { $set: { ...updateData, updatedAt: new Date() } },
       { returnDocument: 'after' }
@@ -101,7 +101,7 @@ class Product {
    * @returns {boolean} - True if product was deleted
    */
   static async delete(id) {
-    const result = await db.getCollection('products').deleteOne({ id });
+    const result = await db.getDb().collection('products').deleteOne({ id });
     return result.deletedCount > 0;
   }
 
@@ -115,7 +115,7 @@ class Product {
   static async updateStock(productId, quantity, session = null) {
     const options = session ? { session } : {};
     
-    const result = await db.getCollection('products').updateOne(
+    const result = await db.getDb().collection('products').updateOne(
       { id: productId, stock: { $gte: quantity } },
       { $inc: { stock: -quantity } },
       options
@@ -131,7 +131,7 @@ class Product {
    * @returns {object|null} - Product object or null if not found
    */
   static async findByIdWithSession(id, session) {
-    return await db.getCollection('products').findOne({ id }, { session });
+    return await db.getDb().collection('products').findOne({ id }, { session });
   }
 }
 

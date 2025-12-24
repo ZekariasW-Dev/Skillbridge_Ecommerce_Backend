@@ -1,5 +1,5 @@
 const { v4: uuidv4 } = require('uuid');
-const db = require('../config/db');
+const db = require('../../config/database');
 
 class Order {
   /**
@@ -28,7 +28,7 @@ class Order {
     };
     
     const options = session ? { session } : {};
-    await db.getCollection('orders').insertOne(order, options);
+    await db.getDb().collection('orders').insertOne(order, options);
     
     return order;
   }
@@ -39,7 +39,7 @@ class Order {
    * @returns {object|null} - Order object or null if not found
    */
   static async findById(id) {
-    return await db.getCollection('orders').findOne({ id });
+    return await db.getDb().collection('orders').findOne({ id });
   }
 
   /**
@@ -48,7 +48,7 @@ class Order {
    * @returns {array} - Array of order objects
    */
   static async findByUserId(UserId) {
-    return await db.getCollection('orders')
+    return await db.getDb().collection('orders')
       .find({ UserId })  // Page 2 PDF Requirement: UserId field
       .sort({ createdAt: -1 })
       .toArray();
@@ -60,7 +60,7 @@ class Order {
    * @returns {object|null} - Order object with products or null if not found
    */
   static async getOrderWithProducts(orderId) {
-    return await db.getCollection('orders').findOne({ id: orderId });
+    return await db.getDb().collection('orders').findOne({ id: orderId });
   }
 }
 
