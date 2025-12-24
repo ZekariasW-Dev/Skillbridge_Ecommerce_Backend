@@ -11,10 +11,11 @@ class Product {
    * @param {number} productData.stock - Product stock quantity
    * @param {string} productData.category - Product category
    * @param {string} productData.userId - User ID (foreign key)
+   * @param {object} productData.images - Product images data (optional)
    * @returns {object} - Created product object
    */
   static async create(productData) {
-    const { name, description, price, stock, category, userId } = productData;
+    const { name, description, price, stock, category, userId, images = null } = productData;
     const id = uuidv4();
     
     const product = {
@@ -25,6 +26,7 @@ class Product {
       stock,
       category,
       userId,
+      images,
       createdAt: new Date()
     };
     
