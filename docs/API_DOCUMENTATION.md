@@ -10,7 +10,9 @@
 - [Endpoints](#endpoints)
   - [Authentication](#authentication-endpoints)
   - [Products](#product-endpoints)
+  - [Product Images](#product-image-endpoints)
   - [Orders](#order-endpoints)
+  - [Cache Management](#cache-management-endpoints)
   - [Health Check](#health-check)
 - [Data Models](#data-models)
 - [Status Codes](#status-codes)
@@ -24,6 +26,8 @@ The E-commerce RESTful API provides a complete backend solution for an online sh
 - 🔐 JWT-based authentication with role-based access control
 - 📦 Complete product CRUD operations with search and pagination
 - 🛒 Order management with transaction safety and stock validation
+- 📸 Product image upload and management with multi-size generation
+- 🗄️ High-performance caching system with intelligent invalidation
 - 🛡️ Rate limiting and security features
 - 📊 Comprehensive error handling and validation
 - 🧪 Full test coverage with unit and integration tests
@@ -428,6 +432,331 @@ Permanently delete a product from the catalog.
 
 ---
 
+## Product Image Endpoints
+
+### Upload Product Image (Admin Only)
+
+Upload a single image for a product with automatic processing and multi-size generation.
+
+**Endpoint:** `POST /products/:id/image`
+
+**Authentication:** Required (Admin role)
+
+**Content-Type:** `multipart/form-data`
+
+**Path Parameters:**
+- `id`: Product UUID
+
+**Form Data:**
+- `image`: Image file (JPEG, PNG, or WebP, max 10MB)
+
+**Image Processing Features:**
+- Automatic format conversion to WebP for optimization
+- Multiple size generation: thumbnail (150x150), medium (500x500), large (1200x1200)
+- Quality optimization based on image format
+- Secure filename generation with UUID
+- Aspect ratio preservation with intelligent resizing
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Product image uploaded and processed successfully",
+  "object": {
+    "productId": "product-uuid-123",
+    "images": {
+      "thumbnail": {
+        "path": "/uploads/thumbnails/uuid_thumb.webp",
+        "size": "150x150",
+        "fileSize": 8432
+      },
+      "medium": {
+        "path": "/uploads/medium/uuid_medium.webp",
+        "size": "500x500",
+        "fileSize": 45678
+      },
+      "large": {
+        "path": "/uploads/images/uuid_large.webp",
+        "size": "1200x1200",
+        "fileSize": 156789
+      }
+    },
+    "uploadInfo": {
+      "originalFilename": "product-photo.jpg",
+      "originalSize": 2048576,
+      "processedAt": "2023-12-01T10:00:00.000Z",
+      "totalProcessedSizes": 3
+    }
+  },
+  "errors": []
+}
+```
+
+**Error Responses:**
+- **400 Bad Request**: Invalid file type, file too large, or processing error
+- **401 Unauthorized**: Missing or invalid token
+- **403 Forbidden**: Non-admin user
+- **404 Not Found**: Product not found
+
+---
+
+### Upload Multiple Product Images (Admin Only)
+
+Upload multiple images for a product (max 5 images).
+
+**Endpoint:** `POST /products/:id/images`
+
+**Authentication:** Required (Admin role)
+
+**Content-Type:** `multipart/form-data`
+
+**Path Parameters:**
+- `id`: Product UUID
+
+**Form Data:**
+- `images`: Array of image files (max 5 files, each max 10MB)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "5 product images uploaded and processed successfully",
+  "object": {
+    "productId": "product-uuid-123",
+    "processedImages": [
+      {
+        "originalFilename": "image1.jpg",
+        "images": {
+          "thumbnail": { "path": "/uploads/thumbnails/uuid1_thumb.webp" },
+          "medium": { "path": "/uploads/medium/uuid1_medium.webp" },
+          "large": { "path": "/uploads/images/uuid1_large.webp" }
+        }
+      }
+    ],
+    "summary": {
+      "totalUploaded": 5,
+      "totalProcessed": 15,
+      "processedAt": "2023-12-01T10:00:00.000Z"
+    }
+  },
+  "errors": []
+}
+```
+
+---
+
+### Delete Product Images (Admin Only)
+
+Delete all images associated with a product.
+
+**Endpoint:** `DELETE /products/:id/image`
+
+**Authentication:** Required (Admin role)
+
+**Path Parameters:**
+- `id`: Product UUID
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Product images deleted successfully",
+  "object": {
+    "productId": "product-uuid-123",
+    "deletedFiles": 9,
+    "deletedAt": "2023-12-01T10:00:00.000Z"
+  },
+  "errors": []
+}
+```
+
+---
+
+### Get Upload Configuration
+
+Get current upload configuration and limits.
+
+**Endpoint:** `GET /upload/config`
+
+**Authentication:** None required
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Upload configuration retrieved successfully",
+  "object": {
+    "maxFileSize": 10485760,
+    "maxFiles": 5,
+    "allowedMimeTypes": ["image/jpeg", "image/png", "image/webp"],
+    "generatedSizes": ["thumbnail", "medium", "large"],
+    "supportedFormats": ["JPEG", "PNG", "WebP"],
+    "outputFormat": "webp"
+  },
+  "errors": []
+}
+```
+
+---
+
+### Get Storage Statistics (Admin Only)
+
+Get detailed storage statistics and usage information.
+
+**Endpoint:** `GET /admin/storage/stats`
+
+**Authentication:** Required (Admin role)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Storage statistics retrieved successfully",
+  "object": {
+    "totalFiles": 156,
+    "totalSize": "45.2 MB",
+    "directories": {
+      "images": {
+        "fileCount": 52,
+        "totalSize": "25.8 MB"
+      },
+      "medium": {
+        "fileCount": 52,
+        "totalSize": "12.4 MB"
+      },
+      "thumbnails": {
+        "fileCount": 52,
+        "totalSize": "7.0 MB"
+      }
+    },
+    "generatedAt": "2023-12-01T10:00:00.000Z"
+  },
+  "errors": []
+}
+```
+
+---
+
+### Cleanup Orphaned Images (Admin Only)
+
+Remove images that are no longer associated with any products.
+
+**Endpoint:** `POST /admin/storage/cleanup`
+
+**Authentication:** Required (Admin role)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Storage cleanup completed successfully",
+  "object": {
+    "orphanedFiles": 12,
+    "deletedFiles": 12,
+    "freedSpace": "3.2 MB",
+    "cleanupAt": "2023-12-01T10:00:00.000Z"
+  },
+  "errors": []
+}
+```
+
+---
+
+## Cache Management Endpoints
+
+### Get Cache Statistics (Admin Only)
+
+Retrieve detailed caching statistics and performance metrics.
+
+**Endpoint:** `GET /products/cache/stats`
+
+**Authentication:** Required (Admin role)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Cache statistics retrieved successfully",
+  "object": {
+    "statistics": {
+      "enabled": true,
+      "hits": 1247,
+      "misses": 356,
+      "hitRate": "77.8%",
+      "sets": 356,
+      "deletes": 89,
+      "flushes": 2,
+      "keys": 45,
+      "ksize": 2048,
+      "vsize": 1048576
+    },
+    "health": {
+      "status": "healthy",
+      "enabled": true,
+      "operations": {
+        "set": true,
+        "get": true,
+        "delete": true
+      }
+    },
+    "configuration": {
+      "enabled": true,
+      "defaultTTL": 60,
+      "productListTTL": 120,
+      "productDetailTTL": 300,
+      "searchTTL": 60,
+      "maxKeys": 1000
+    },
+    "keys": {
+      "total": 45,
+      "sample": [
+        "products:list:page:1:size:10",
+        "products:detail:product-uuid-123",
+        "products:list:page:1:size:10_search:iPhone"
+      ]
+    }
+  },
+  "errors": []
+}
+```
+
+**Cache Metrics Explained:**
+- **Hit Rate**: Percentage of requests served from cache
+- **TTL Values**: Time-to-live in seconds for different cache types
+- **Keys**: Current number of cached entries
+- **Memory Usage**: Cache memory consumption (ksize + vsize)
+
+---
+
+### Flush Cache (Admin Only)
+
+Clear all cached entries to force fresh data retrieval.
+
+**Endpoint:** `DELETE /products/cache/flush`
+
+**Authentication:** Required (Admin role)
+
+**Success Response (200 OK):**
+```json
+{
+  "success": true,
+  "message": "Cache flushed successfully",
+  "object": {
+    "flushed": true,
+    "timestamp": "2023-12-01T10:00:00.000Z"
+  },
+  "errors": []
+}
+```
+
+**Use Cases:**
+- Force refresh of all cached data
+- Clear cache after bulk product updates
+- Troubleshooting cache-related issues
+- Maintenance operations
+
+---
+
 ## Order Endpoints
 
 ### Place Order
@@ -611,6 +940,8 @@ Get general information about the API.
     "authentication": "/auth (POST /register, POST /login)",
     "products": "/products (GET, POST, PUT, DELETE)",
     "orders": "/orders (GET, POST)",
+    "images": "/products/:id/image (POST, DELETE), /products/:id/images (POST)",
+    "cache": "/products/cache/stats (GET), /products/cache/flush (DELETE)",
     "health": "/health"
   },
   "documentation": "See README.md for detailed API documentation"
@@ -643,6 +974,30 @@ Get general information about the API.
   "stock": "number (non-negative integer)",
   "category": "string (non-empty)",
   "userId": "string (UUID of creator)",
+  "images": {
+    "processedImages": {
+      "thumbnail": {
+        "path": "string (relative path to thumbnail)",
+        "size": "string (dimensions)",
+        "fileSize": "number (bytes)"
+      },
+      "medium": {
+        "path": "string (relative path to medium image)",
+        "size": "string (dimensions)",
+        "fileSize": "number (bytes)"
+      },
+      "large": {
+        "path": "string (relative path to large image)",
+        "size": "string (dimensions)",
+        "fileSize": "number (bytes)"
+      }
+    },
+    "uploadInfo": {
+      "originalFilename": "string",
+      "processedAt": "string (ISO date)",
+      "totalProcessedSizes": "number"
+    }
+  },
   "createdAt": "string (ISO date)",
   "updatedAt": "string (ISO date)"
 }
@@ -786,6 +1141,10 @@ npm run test-login
 npm run test-create-product
 npm run test-place-order
 npm run test-view-order-history
+
+# Test advanced features
+npm run test-image-upload
+npm run test-caching
 
 # Test security features
 npm run test-validation-security
