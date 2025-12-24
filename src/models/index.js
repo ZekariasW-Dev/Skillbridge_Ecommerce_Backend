@@ -109,7 +109,11 @@ const ModelConfig = {
       },
       CATEGORY: {
         TYPE: 'string',
-        REQUIRED: true
+        REQUIRED: true,
+        MIN_LENGTH: 1,
+        MAX_LENGTH: 50,
+        DESCRIPTION: 'Product category (Page 2 & 5 PDF requirement)',
+        VALIDATION_MESSAGE: 'Category is required and must be a non-empty string'
       },
       USER_ID: {
         TYPE: 'UUID_V4',
