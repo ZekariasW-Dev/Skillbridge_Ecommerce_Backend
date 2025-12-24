@@ -3,19 +3,19 @@ const db = require('../config/db');
 
 class Product {
   /**
-   * Create a new product
+   * Create a new product (Page 2 PDF Requirement: Must include UserID)
    * @param {object} productData - Product data object
    * @param {string} productData.name - Product name
    * @param {string} productData.description - Product description
    * @param {number} productData.price - Product price
    * @param {number} productData.stock - Product stock quantity
    * @param {string} productData.category - Product category
-   * @param {string} productData.userId - User ID (foreign key)
+   * @param {string} productData.UserID - User ID (foreign key) - Page 2 PDF Requirement
    * @param {object} productData.images - Product images data (optional)
    * @returns {object} - Created product object
    */
   static async create(productData) {
-    const { name, description, price, stock, category, userId, images = null } = productData;
+    const { name, description, price, stock, category, UserID, images = null } = productData;
     const id = uuidv4();
     
     const product = {
@@ -25,7 +25,7 @@ class Product {
       price,
       stock,
       category,
-      userId,
+      UserID,  // Page 2 PDF Requirement: UserID field (capitalized)
       images,
       createdAt: new Date()
     };

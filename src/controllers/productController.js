@@ -18,7 +18,7 @@ const { validateProduct, validateProductUpdate } = require('../utils/validation'
 const createProduct = async (req, res) => {
   try {
     const { name, description, price, stock, category } = req.body;
-    const userId = req.user.userId; // From JWT token (authenticated admin)
+    const UserID = req.user.userId; // From JWT token (authenticated admin) - Page 2 PDF Requirement
     
     // Input validation according to User Story 3 requirements
     const productData = { name, description, price, stock, category };
@@ -33,14 +33,14 @@ const createProduct = async (req, res) => {
       ));
     }
     
-    // Create product with validated data
+    // Create product with validated data (Page 2 PDF Requirement: Include UserID)
     const product = await Product.create({
       name: name.trim(),
       description: description.trim(),
       price: parseFloat(price),
       stock: parseInt(stock),
       category: category.trim(),
-      userId
+      UserID  // Page 2 PDF Requirement: UserID field (capitalized)
     });
     
     // Return 201 Created with newly created product data
@@ -315,7 +315,7 @@ const getProductById = async (req, res) => {
         price: product.price,
         stock: product.stock,
         category: product.category,
-        userId: product.userId,
+        userId: product.UserID,  // Page 2 PDF Requirement: UserID field
         createdAt: product.createdAt,
         updatedAt: product.updatedAt
       }

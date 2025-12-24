@@ -70,7 +70,54 @@ const ModelConfig = {
   
   PRODUCT: {
     COLLECTION: 'products',
-    REQUIRED_FIELDS: ['name', 'description', 'price', 'stock', 'category']
+    REQUIRED_FIELDS: ['name', 'description', 'price', 'stock', 'category', 'UserID'], // Page 2 PDF Requirement: UserID field
+    OPTIONAL_FIELDS: ['images', 'createdAt', 'updatedAt'],
+    FIELD_TYPES: {
+      ID: 'UUID_V4',
+      NAME: 'string',
+      DESCRIPTION: 'string', 
+      PRICE: 'number',
+      STOCK: 'number',
+      CATEGORY: 'string',
+      USER_ID: 'UUID_V4',  // Page 2 PDF Requirement: UserID as UUID foreign key
+      IMAGES: 'object',
+      CREATED_AT: 'Date',
+      UPDATED_AT: 'Date'
+    },
+    VALIDATION_RULES: {
+      NAME: {
+        TYPE: 'string',
+        MIN_LENGTH: 3,
+        MAX_LENGTH: 100,
+        REQUIRED: true
+      },
+      DESCRIPTION: {
+        TYPE: 'string',
+        MIN_LENGTH: 10,
+        REQUIRED: true
+      },
+      PRICE: {
+        TYPE: 'number',
+        MIN_VALUE: 0,
+        REQUIRED: true
+      },
+      STOCK: {
+        TYPE: 'number',
+        MIN_VALUE: 0,
+        INTEGER: true,
+        REQUIRED: true
+      },
+      CATEGORY: {
+        TYPE: 'string',
+        REQUIRED: true
+      },
+      USER_ID: {
+        TYPE: 'UUID_V4',
+        REQUIRED: true,
+        FOREIGN_KEY: 'users.id',
+        DESCRIPTION: 'Admin who created the product'
+      }
+    }
   },
   
   ORDER: {

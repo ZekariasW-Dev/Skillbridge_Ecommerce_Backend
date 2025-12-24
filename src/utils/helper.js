@@ -141,7 +141,7 @@ const sanitizeProduct = (product) => {
     price: formatPrice(product.price),
     stock: product.stock,
     category: product.category,
-    userId: product.userId,
+    userId: product.UserID,  // Page 2 PDF Requirement: UserID field
     createdAt: product.createdAt
   };
 };
