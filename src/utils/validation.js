@@ -9,7 +9,7 @@ const validateEmail = (email) => {
 };
 
 /**
- * Validate password according to requirements
+ * Validate password according to very strong requirements (Page 4 PDF)
  * @param {string} password - Password to validate
  * @returns {string[]} - Array of validation error messages
  */
@@ -40,7 +40,8 @@ const validatePassword = (password) => {
 };
 
 /**
- * Validate username according to requirements
+ * Validate username according to requirements (Page 4 PDF)
+ * Username must contain only letters and numbers (alphanumeric)
  * @param {string} username - Username to validate
  * @returns {string[]} - Array of validation error messages
  */
@@ -50,7 +51,7 @@ const validateUsername = (username) => {
   if (!username || username.trim().length === 0) {
     errors.push('Username is required');
   } else if (!/^[a-zA-Z0-9]+$/.test(username)) {
-    errors.push('Username must be alphanumeric (letters and numbers only, no special characters or spaces)');
+    errors.push('Username must contain only letters and numbers (no spaces, special characters, or symbols allowed)');
   }
   
   return errors;
