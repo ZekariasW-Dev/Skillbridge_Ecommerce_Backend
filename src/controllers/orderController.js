@@ -138,15 +138,16 @@ const createOrder = async (req, res) => {
         products: orderProducts
       }, session);
       
-      // Return order details as specified in User Story 9 + Page 2 PDF
+      // Return order details as specified in User Story 9 + Page 2 PDF + Page 10 PDF
+      // Page 10 PDF Requirement: Response should contain order_id, status, total_price, and products
       return {
-        order_id: order.id, // User Story 9 uses 'order_id'
-        status: order.status,
-        total_price: order.totalPrice, // User Story 9 uses 'total_price'
+        order_id: order.id, // Page 10 PDF Requirement: order_id field
+        status: order.status, // Page 10 PDF Requirement: status field
+        total_price: order.totalPrice, // Page 10 PDF Requirement: total_price field
         description: order.description, // Page 2 PDF requirement
         userId: order.userId,
         createdAt: order.createdAt,
-        products: orderProducts.map(item => ({
+        products: orderProducts.map(item => ({ // Page 10 PDF Requirement: products field
           productId: item.productId,
           name: item.name,
           description: item.description,
@@ -229,14 +230,15 @@ const getMyOrders = async (req, res) => {
     // Retrieve orders belonging only to authenticated user (User Story 10 requirement)
     const orders = await Order.findByUserId(userId);
     
-    // Format orders with key summary information (User Story 10 requirement)
+    // Format orders with key summary information (User Story 10 + Page 10 PDF requirement)
+    // Page 10 PDF Requirement: Response should contain order_id, status, total_price, and products
     const orderHistory = orders.map(order => ({
-      order_id: order.id, // User Story 10 uses 'order_id'
-      status: order.status,
-      total_price: order.totalPrice, // User Story 10 uses 'total_price'
+      order_id: order.id, // Page 10 PDF Requirement: order_id field
+      status: order.status, // Page 10 PDF Requirement: status field
+      total_price: order.totalPrice, // Page 10 PDF Requirement: total_price field
       created_at: order.createdAt, // User Story 10 uses 'created_at'
       description: order.description,
-      products: order.products || []
+      products: order.products || [] // Page 10 PDF Requirement: products field
     }));
     
     // Return 200 OK with array of orders (User Story 10 requirement)
