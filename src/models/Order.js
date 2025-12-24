@@ -5,7 +5,7 @@ class Order {
   /**
    * Create a new order
    * @param {object} orderData - Order data object
-   * @param {string} orderData.userId - User ID (foreign key)
+   * @param {string} orderData.UserId - User ID (foreign key) - Page 2 PDF Requirement: UserId casing
    * @param {string} orderData.description - Order description
    * @param {number} orderData.totalPrice - Total price of the order
    * @param {string} orderData.status - Order status
@@ -14,12 +14,12 @@ class Order {
    * @returns {object} - Created order object
    */
   static async create(orderData, session = null) {
-    const { userId, description, totalPrice, status, products = [] } = orderData;
+    const { UserId, description, totalPrice, status, products = [] } = orderData;
     const id = uuidv4();
     
     const order = {
       id,
-      userId,
+      UserId,  // Page 2 PDF Requirement: UserId field (capital U, lowercase i)
       description,
       totalPrice,
       status,
@@ -44,12 +44,12 @@ class Order {
 
   /**
    * Find all orders for a specific user
-   * @param {string} userId - User UUID
+   * @param {string} UserId - User UUID (Page 2 PDF Requirement: UserId casing)
    * @returns {array} - Array of order objects
    */
-  static async findByUserId(userId) {
+  static async findByUserId(UserId) {
     return await db.getCollection('orders')
-      .find({ userId })
+      .find({ UserId })  // Page 2 PDF Requirement: UserId field
       .sort({ createdAt: -1 })
       .toArray();
   }

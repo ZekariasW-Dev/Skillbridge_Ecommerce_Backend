@@ -126,7 +126,7 @@ const ModelConfig = {
   
   ORDER: {
     COLLECTION: 'orders',
-    REQUIRED_FIELDS: ['userId', 'description', 'totalPrice', 'status', 'products'],
+    REQUIRED_FIELDS: ['UserId', 'description', 'totalPrice', 'status', 'products'], // Page 2 PDF Requirement: UserId casing
     OPTIONAL_FIELDS: ['createdAt', 'updatedAt'],
     STATUSES: {
       PENDING: 'pending',
@@ -137,7 +137,7 @@ const ModelConfig = {
     },
     FIELD_TYPES: {
       ID: 'UUID_V4',
-      USER_ID: 'UUID_V4',
+      USER_ID: 'UUID_V4',  // Page 2 PDF Requirement: UserId field
       DESCRIPTION: 'string',
       TOTAL_PRICE: 'number',
       STATUS: 'string',

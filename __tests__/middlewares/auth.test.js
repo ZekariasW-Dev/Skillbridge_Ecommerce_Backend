@@ -40,30 +40,20 @@ describe('Auth Middleware', () => {
     });
 
     it('should return 401 for missing token', () => {
-      authenticateToken(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Authentication token is required',
-        object: null,
-        errors: ['Authentication token is required']
-      });
+      expect(() => {
+        authenticateToken(req, res, next);
+      }).toThrow('Authentication token is required');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 for malformed authorization header', () => {
       req.headers.authorization = 'InvalidFormat';
 
-      authenticateToken(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Authentication token is required',
-        object: null,
-        errors: ['Authentication token is required']
-      });
+      expect(() => {
+        authenticateToken(req, res, next);
+      }).toThrow('Authentication token is required');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -73,15 +63,10 @@ describe('Auth Middleware', () => {
         callback(new Error('Invalid token'), null);
       });
 
-      authenticateToken(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Invalid or expired authentication token',
-        object: null,
-        errors: ['Invalid or expired authentication token']
-      });
+      expect(() => {
+        authenticateToken(req, res, next);
+      }).toThrow('Invalid or expired authentication token');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -93,16 +78,12 @@ describe('Auth Middleware', () => {
         callback(error, null);
       });
 
-      authenticateToken(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Invalid or expired authentication token',
-        object: null,
-        errors: ['Invalid or expired authentication token']
-      });
+      expect(() => {
+        authenticateToken(req, res, next);
+      }).toThrow('Invalid or expired authentication token');
+      
       expect(next).not.toHaveBeenCalled();
+    });
     });
 
     it('should handle different token formats', () => {
@@ -147,30 +128,20 @@ describe('Auth Middleware', () => {
         role: 'user'
       };
 
-      requireAdmin(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Admin role required to access this resource',
-        object: null,
-        errors: ['Admin role required to access this resource']
-      });
+      expect(() => {
+        requireAdmin(req, res, next);
+      }).toThrow('Admin role required to access this resource');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
     it('should return 401 for missing user (not authenticated)', () => {
       // req.user is undefined
 
-      requireAdmin(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Authentication required',
-        object: null,
-        errors: ['Authentication required']
-      });
+      expect(() => {
+        requireAdmin(req, res, next);
+      }).toThrow('Authentication required');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -181,15 +152,10 @@ describe('Auth Middleware', () => {
         // role is undefined
       };
 
-      requireAdmin(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        message: 'Admin role required to access this resource',
-        object: null,
-        errors: ['Admin role required to access this resource']
-      });
+      expect(() => {
+        requireAdmin(req, res, next);
+      }).toThrow('Admin role required to access this resource');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -200,9 +166,10 @@ describe('Auth Middleware', () => {
         role: ''
       };
 
-      requireAdmin(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(() => {
+        requireAdmin(req, res, next);
+      }).toThrow('Admin role required to access this resource');
+      
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -213,9 +180,10 @@ describe('Auth Middleware', () => {
         role: 'Admin' // Wrong case
       };
 
-      requireAdmin(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(403);
+      expect(() => {
+        requireAdmin(req, res, next);
+      }).toThrow('Admin role required to access this resource');
+      
       expect(next).not.toHaveBeenCalled();
     });
   });

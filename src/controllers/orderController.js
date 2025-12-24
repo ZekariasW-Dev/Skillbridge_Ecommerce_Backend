@@ -146,7 +146,7 @@ const createOrder = async (req, res) => {
       // Page 2 PDF: Order Table includes Description: string field
       // Page 10 PDF: Description can be user-provided or auto-generated
       const order = await Order.create({
-        userId,
+        UserId: userId,  // Page 2 PDF Requirement: UserId field casing
         description: orderDescription, // Page 2 & 10 PDF: Description field implementation
         totalPrice: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
         status: 'pending', // Default status as per User Story 9
@@ -160,7 +160,7 @@ const createOrder = async (req, res) => {
         status: order.status, // Page 10 PDF Requirement: status field
         total_price: order.totalPrice, // Page 10 PDF Requirement: total_price field
         description: order.description, // Page 2 PDF requirement
-        userId: order.userId,
+        UserId: order.UserId,  // Page 2 PDF Requirement: UserId field casing
         createdAt: order.createdAt,
         products: orderProducts.map(item => ({ // Page 10 PDF Requirement: products field
           productId: item.productId,
