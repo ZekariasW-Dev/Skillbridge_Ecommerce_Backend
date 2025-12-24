@@ -8,16 +8,16 @@ const { createResponse } = require('../utils/responses');
  * POST /orders
  * 
  * Acceptance Criteria:
- * 1. POST request with array of products (productId and quantity for each)
+ * 1. POST request with array of products (productId and quantity for each) and optional description
  * 2. Protected endpoint - only authenticated users with 'User' role can access
  * 3. Business Logic: verify stock, handle in database transaction, calculate total_price on backend
- * 4. Success: 201 Created with order details (order_id, status, total_price, products)
+ * 4. Success: 201 Created with order details (order_id, status, total_price, products, description)
  * 5. Failure: 400 Bad Request for insufficient stock, 404 Not Found for non-existent products
  */
 const createOrder = async (req, res) => {
   try {
     const userId = req.user.userId; // From JWT token (authenticated user)
-    const orderItems = req.body;
+    const { products: orderItems, description } = req.body;
     
     // Validate request body format (User Story 9 requirement)
     if (!Array.isArray(orderItems) || orderItems.length === 0) {
@@ -27,6 +27,28 @@ const createOrder = async (req, res) => {
         null, 
         ['Order must contain an array of products with productId and quantity']
       ));
+    }
+    
+    // Validate description if provided (Page 2 PDF requirement)
+    let orderDescription = description;
+    if (description !== undefined) {
+      if (typeof description !== 'string') {
+        return res.status(400).json(createResponse(
+          false, 
+          'Order placement failed', 
+          null, 
+          ['Description must be a string']
+        ));
+      }
+      orderDescription = description.trim();
+      if (orderDescription.length > 500) {
+        return res.status(400).json(createResponse(
+          false, 
+          'Order placement failed', 
+          null, 
+          ['Description must not exceed 500 characters']
+        ));
+      }
     }
     
     // Validate each order item (User Story 9 requirement)
@@ -56,6 +78,7 @@ const createOrder = async (req, res) => {
     const result = await db.withTransaction(async (session) => {
       let totalPrice = 0;
       const orderProducts = [];
+      const productNames = [];
       
       // Verify products exist and check stock for each item (User Story 9 requirement)
       for (const item of orderItems) {
@@ -83,6 +106,19 @@ const createOrder = async (req, res) => {
           description: product.description,
           itemTotal: itemTotal
         });
+        
+        productNames.push(`${item.quantity}x ${product.name}`);
+      }
+      
+      // Generate description if not provided (Page 2 PDF requirement)
+      if (!orderDescription) {
+        if (productNames.length === 1) {
+          orderDescription = `Order for ${productNames[0]}`;
+        } else if (productNames.length <= 3) {
+          orderDescription = `Order for ${productNames.join(', ')}`;
+        } else {
+          orderDescription = `Order with ${orderItems.length} products: ${productNames.slice(0, 2).join(', ')} and ${orderItems.length - 2} more`;
+        }
       }
       
       // Update stock for all products within transaction (User Story 9 requirement)
@@ -93,20 +129,21 @@ const createOrder = async (req, res) => {
         }
       }
       
-      // Create order with calculated total_price (User Story 9 requirement)
+      // Create order with calculated total_price and description (User Story 9 + Page 2 PDF requirement)
       const order = await Order.create({
         userId,
-        description: `Order with ${orderItems.length} product${orderItems.length > 1 ? 's' : ''}`,
+        description: orderDescription,
         totalPrice: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
         status: 'pending', // Default status as per User Story 9
         products: orderProducts
       }, session);
       
-      // Return order details as specified in User Story 9
+      // Return order details as specified in User Story 9 + Page 2 PDF
       return {
         order_id: order.id, // User Story 9 uses 'order_id'
         status: order.status,
         total_price: order.totalPrice, // User Story 9 uses 'total_price'
+        description: order.description, // Page 2 PDF requirement
         userId: order.userId,
         createdAt: order.createdAt,
         products: orderProducts.map(item => ({

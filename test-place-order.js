@@ -125,9 +125,11 @@ const testPlaceOrder = async () => {
     const unauthResponse = await fetch(`${baseURL}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 1 }
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 1 }
+        ]
+      })
     });
     
     if (unauthResponse.status === 401) {
@@ -136,38 +138,50 @@ const testPlaceOrder = async () => {
       console.log('❌ Unauthenticated request test failed:', unauthResponse.status);
     }
     
-    // Test 2: Valid single product order (201 Created)
-    console.log('\n2️⃣ Testing valid single product order...');
+    // Test 2: Valid single product order with custom description (201 Created)
+    console.log('\n2️⃣ Testing valid single product order with custom description...');
     const singleOrderResponse = await fetch(`${baseURL}/orders`, {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 2 }
-      ])
+      body: JSON.stringify({
+        description: 'Birthday gift for my friend - gaming setup',
+        products: [
+          { productId: testProducts[0].id, quantity: 2 }
+        ]
+      })
     });
     
     const singleOrderData = await singleOrderResponse.json();
     if (singleOrderResponse.status === 201 && singleOrderData.success) {
-      console.log('✅ Single product order: 201 Created (CORRECT)');
+      console.log('✅ Single product order with description: 201 Created (CORRECT)');
       console.log('📦 Order details:');
       console.log('  - Order ID:', singleOrderData.object.order_id);
       console.log('  - Status:', singleOrderData.object.status);
       console.log('  - Total Price:', singleOrderData.object.total_price);
+      console.log('  - Description:', singleOrderData.object.description);
       console.log('  - Products:', singleOrderData.object.products.length);
       
-      // Validate User Story 9 response structure
+      // Validate User Story 9 + Page 2 PDF response structure
       const hasRequiredFields = singleOrderData.object.hasOwnProperty('order_id') &&
                                singleOrderData.object.hasOwnProperty('status') &&
                                singleOrderData.object.hasOwnProperty('total_price') &&
+                               singleOrderData.object.hasOwnProperty('description') &&
                                singleOrderData.object.hasOwnProperty('products');
       
       if (hasRequiredFields) {
-        console.log('✅ Response contains required fields: order_id, status, total_price, products');
+        console.log('✅ Response contains required fields: order_id, status, total_price, description, products');
       } else {
         console.log('❌ Response missing required fields');
+      }
+      
+      // Validate custom description (Page 2 PDF requirement)
+      if (singleOrderData.object.description === 'Birthday gift for my friend - gaming setup') {
+        console.log('✅ Custom description saved correctly');
+      } else {
+        console.log('❌ Custom description not saved correctly');
       }
       
       // Validate total_price calculation (User Story 9 requirement)
@@ -185,7 +199,7 @@ const testPlaceOrder = async () => {
         console.log('❌ Order status should be "pending"');
       }
     } else {
-      console.log('❌ Single product order test failed:', singleOrderData);
+      console.log('❌ Single product order with description test failed:', singleOrderData);
     }
     
     // Test 3: Valid multiple product order (201 Created)
@@ -196,10 +210,12 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 1 },
-        { productId: testProducts[1].id, quantity: 2 }
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 1 },
+          { productId: testProducts[1].id, quantity: 2 }
+        ]
+      })
     });
     
     const multiOrderData = await multiOrderResponse.json();
@@ -208,7 +224,15 @@ const testPlaceOrder = async () => {
       console.log('📦 Order details:');
       console.log('  - Order ID:', multiOrderData.object.order_id);
       console.log('  - Total Price:', multiOrderData.object.total_price);
+      console.log('  - Description:', multiOrderData.object.description);
       console.log('  - Products:', multiOrderData.object.products.length);
+      
+      // Validate auto-generated description (Page 2 PDF requirement)
+      if (multiOrderData.object.description && multiOrderData.object.description.includes('Order for')) {
+        console.log('✅ Auto-generated description created when none provided');
+      } else {
+        console.log('❌ Auto-generated description not working properly');
+      }
       
       // Validate total_price calculation for multiple products
       const expectedTotal = (testProducts[0].price * 1) + (testProducts[1].price * 2);
@@ -222,6 +246,37 @@ const testPlaceOrder = async () => {
       console.log('❌ Multiple product order test failed:', multiOrderData);
     }
     
+    // Test 3b: Order without description (auto-generated description)
+    console.log('\n3️⃣b Testing order without description (auto-generated)...');
+    const autoDescResponse = await fetch(`${baseURL}/orders`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`
+      },
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 1 }
+        ]
+      })
+    });
+    
+    const autoDescData = await autoDescResponse.json();
+    if (autoDescResponse.status === 201 && autoDescData.success) {
+      console.log('✅ Order without description: 201 Created (CORRECT)');
+      console.log('📦 Auto-generated description:', autoDescData.object.description);
+      
+      // Validate auto-generated description format
+      const expectedPattern = /Order for \d+x .+/;
+      if (expectedPattern.test(autoDescData.object.description)) {
+        console.log('✅ Auto-generated description follows correct format');
+      } else {
+        console.log('❌ Auto-generated description format incorrect');
+      }
+    } else {
+      console.log('❌ Order without description test failed:', autoDescData);
+    }
+    
     // Test 4: Non-existent product (404 Not Found)
     console.log('\n4️⃣ Testing order with non-existent product...');
     const nonExistentResponse = await fetch(`${baseURL}/orders`, {
@@ -230,9 +285,11 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: 'non-existent-product-id', quantity: 1 }
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: 'non-existent-product-id', quantity: 1 }
+        ]
+      })
     });
     
     const nonExistentData = await nonExistentResponse.json();
@@ -244,6 +301,38 @@ const testPlaceOrder = async () => {
       console.log('❌ Non-existent product test failed:', nonExistentResponse.status);
     }
     
+    // Test 4b: Invalid description (too long)
+    console.log('\n4️⃣b Testing order with invalid description (too long)...');
+    const longDescription = 'A'.repeat(501); // 501 characters (exceeds 500 limit)
+    const invalidDescResponse = await fetch(`${baseURL}/orders`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userToken}`
+      },
+      body: JSON.stringify({
+        description: longDescription,
+        products: [
+          { productId: testProducts[0].id, quantity: 1 }
+        ]
+      })
+    });
+    
+    const invalidDescData = await invalidDescResponse.json();
+    if (invalidDescResponse.status === 400) {
+      console.log('✅ Invalid description (too long): 400 Bad Request (CORRECT)');
+      console.log('📝 Error message:', invalidDescData.errors[0]);
+      
+      // Validate error message mentions description length
+      if (invalidDescData.errors[0].includes('500 characters')) {
+        console.log('✅ Clear description length error message provided');
+      } else {
+        console.log('⚠️  Error message could be clearer about description length limit');
+      }
+    } else {
+      console.log('❌ Invalid description test failed:', invalidDescResponse.status);
+    }
+    
     // Test 5: Insufficient stock (400 Bad Request)
     console.log('\n5️⃣ Testing order with insufficient stock...');
     const insufficientStockResponse = await fetch(`${baseURL}/orders`, {
@@ -252,9 +341,11 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[2].id, quantity: 10 } // Requesting more than available (stock: 2)
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[2].id, quantity: 10 } // Requesting more than available (stock: 2)
+        ]
+      })
     });
     
     const insufficientStockData = await insufficientStockResponse.json();
@@ -283,9 +374,11 @@ const testPlaceOrder = async () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${userToken}`
         },
-        body: JSON.stringify([
-          { productId: testProducts[3].id, quantity: 1 } // Stock: 0
-        ])
+        body: JSON.stringify({
+          products: [
+            { productId: testProducts[3].id, quantity: 1 } // Stock: 0
+          ]
+        })
       });
       
       const outOfStockData = await outOfStockResponse.json();
@@ -324,7 +417,9 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([])
+      body: JSON.stringify({
+        products: []
+      })
     });
     
     const emptyOrderData = await emptyOrderResponse.json();
@@ -343,10 +438,12 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 0 }, // Invalid: zero quantity
-        { productId: testProducts[1].id, quantity: -1 } // Invalid: negative quantity
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 0 }, // Invalid: zero quantity
+          { productId: testProducts[1].id, quantity: -1 } // Invalid: negative quantity
+        ]
+      })
     });
     
     const invalidQuantityData = await invalidQuantityResponse.json();
@@ -365,10 +462,12 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 1 }, // Valid
-        { productId: 'invalid-product-id', quantity: 1 } // Invalid - should cause rollback
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 1 }, // Valid
+          { productId: 'invalid-product-id', quantity: 1 } // Invalid - should cause rollback
+        ]
+      })
     });
     
     const rollbackData = await rollbackResponse.json();
@@ -403,9 +502,11 @@ const testPlaceOrder = async () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${userToken}`
       },
-      body: JSON.stringify([
-        { productId: testProducts[0].id, quantity: 1 }
-      ])
+      body: JSON.stringify({
+        products: [
+          { productId: testProducts[0].id, quantity: 1 }
+        ]
+      })
     });
     
     if (stockTestResponse.status === 201) {
@@ -426,8 +527,11 @@ const testPlaceOrder = async () => {
     console.log('\n📋 Summary:');
     console.log('✅ POST /orders endpoint implemented');
     console.log('✅ Protected endpoint (authenticated users only)');
-    console.log('✅ Array format with productId and quantity for each item');
-    console.log('✅ 201 Created with order details (order_id, status, total_price, products)');
+    console.log('✅ New request format with products array and optional description');
+    console.log('✅ Description field support (Page 2 PDF requirement)');
+    console.log('✅ Auto-generated description when none provided');
+    console.log('✅ Description validation (max 500 characters)');
+    console.log('✅ 201 Created with order details (order_id, status, total_price, description, products)');
     console.log('✅ 404 Not Found for non-existent products');
     console.log('✅ 400 Bad Request for insufficient stock with clear error messages');
     console.log('✅ Database transaction handling (all-or-nothing)');
