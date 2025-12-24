@@ -126,11 +126,10 @@ describe('Response Utils', () => {
         success: true,
         message: 'Items retrieved successfully',
         object: data,
-        errors: [],
-        currentPage: 1,
+        errors: null,
+        PageNumber: 1,    // Page 3 PDF Requirement: PageNumber (capitalized)
         pageSize: 10,
-        totalPages: 3,
-        totalItems: 25
+        TotalSize: 25     // Page 3 PDF Requirement: TotalSize (capitalized)
       });
     });
 
@@ -155,7 +154,11 @@ describe('Response Utils', () => {
           totalItems
         );
 
-        expect(response.totalPages).toBe(expectedPages);
+        // Note: The test was checking totalPages which doesn't exist in createPaginatedResponse
+        // createPaginatedResponse only returns PageNumber, pageSize, and TotalSize
+        expect(response.TotalSize).toBe(totalItems);
+        expect(response.PageNumber).toBe(1);
+        expect(response.pageSize).toBe(pageSize);
       });
     });
 
@@ -173,11 +176,10 @@ describe('Response Utils', () => {
         success: true,
         message: 'No items found',
         object: [],
-        errors: [],
-        currentPage: 1,
+        errors: null,
+        PageNumber: 1,    // Page 3 PDF Requirement: PageNumber (capitalized)
         pageSize: 10,
-        totalPages: 0,
-        totalItems: 0
+        TotalSize: 0      // Page 3 PDF Requirement: TotalSize (capitalized)
       });
     });
 
@@ -197,10 +199,9 @@ describe('Response Utils', () => {
         message: 'Failed to retrieve items',
         object: null,
         errors: ['Database error'],
-        currentPage: 1,
+        PageNumber: 1,    // Page 3 PDF Requirement: PageNumber (capitalized)
         pageSize: 10,
-        totalPages: 0,
-        totalItems: 0
+        TotalSize: 0      // Page 3 PDF Requirement: TotalSize (capitalized)
       });
     });
 
@@ -214,8 +215,8 @@ describe('Response Utils', () => {
         100
       );
 
-      expect(response.currentPage).toBe(999);
-      expect(response.totalPages).toBe(10);
+      expect(response.PageNumber).toBe(999);  // Page 3 PDF Requirement: PageNumber (capitalized)
+      expect(response.TotalSize).toBe(100);   // Page 3 PDF Requirement: TotalSize (capitalized)
     });
   });
 

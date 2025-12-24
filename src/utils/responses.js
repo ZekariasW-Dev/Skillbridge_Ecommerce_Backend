@@ -16,7 +16,7 @@ const createResponse = (success, message, object = null, errors = null) => {
 };
 
 /**
- * Paginated response object structure
+ * Paginated response object structure (Page 3 PDF Requirement)
  * @param {boolean} success - Success status
  * @param {string} message - Response message
  * @param {object[]} object - List of objects
@@ -24,16 +24,16 @@ const createResponse = (success, message, object = null, errors = null) => {
  * @param {number} pageSize - Number of items per page
  * @param {number} totalSize - Total number of items
  * @param {string[]|null} errors - List of error messages
- * @returns {object} - Paginated response object
+ * @returns {object} - Paginated response object with Page 3 PDF field naming
  */
 const createPaginatedResponse = (success, message, object = [], pageNumber = 1, pageSize = 10, totalSize = 0, errors = null) => {
   return {
     success,
     message,
     object,
-    pageNumber,
+    PageNumber: pageNumber,  // Page 3 PDF Requirement: Use PageNumber (capitalized)
     pageSize,
-    totalSize,
+    TotalSize: totalSize,    // Page 3 PDF Requirement: Use TotalSize (capitalized)
     errors
   };
 };
