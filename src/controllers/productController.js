@@ -3,13 +3,13 @@ const { createResponse, createPaginatedResponse, createProductListResponse } = r
 const { validateProduct, validateProductUpdate } = require('../utils/validation');
 
 /**
- * Create Product endpoint - User Story 3
+ * Create Product endpoint - User Story 3 & Page 5 PDF Requirements
  * POST /products
  * 
  * Acceptance Criteria:
  * 1. Admin must send POST request with name, description, price, stock, category
  * 2. Protected endpoint - only authenticated Admin users can access
- * 3. Input validation for all fields with specific requirements
+ * 3. Input validation for all fields with specific requirements (Page 5 PDF: name 3-100 characters)
  * 4. Returns 201 Created with product data on success
  * 5. Returns 400 Bad Request with clear error messages on validation failure
  * 6. Returns 401 Unauthorized for unauthenticated users
@@ -20,9 +20,9 @@ const createProduct = async (req, res) => {
     const { name, description, price, stock, category } = req.body;
     const UserID = req.user.userId; // From JWT token (authenticated admin) - Page 2 PDF Requirement
     
-    // Input validation according to User Story 3 requirements
+    // Input validation according to User Story 3 requirements and Page 5 PDF specifications
     const productData = { name, description, price, stock, category };
-    const validationErrors = validateProduct(productData);
+    const validationErrors = validateProduct(productData); // Page 5 PDF: name must be 3-100 characters
     
     if (validationErrors && validationErrors.length > 0) {
       return res.status(400).json(createResponse(

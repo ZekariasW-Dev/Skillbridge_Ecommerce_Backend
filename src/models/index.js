@@ -79,7 +79,7 @@ const ModelConfig = {
       PRICE: 'number',
       STOCK: 'number',
       CATEGORY: 'string',
-      USER_ID: 'UUID_V4',  // Page 2 PDF Requirement: UserID as UUID foreign key
+      UserID: 'UUID_V4',  // Page 2 PDF Requirement: UserID field (both capitals) as UUID foreign key
       IMAGES: 'object',
       CREATED_AT: 'Date',
       UPDATED_AT: 'Date'
@@ -115,11 +115,11 @@ const ModelConfig = {
         DESCRIPTION: 'Product category (Page 2 & 5 PDF requirement)',
         VALIDATION_MESSAGE: 'Category is required and must be a non-empty string'
       },
-      USER_ID: {
+      UserID: {
         TYPE: 'UUID_V4',
         REQUIRED: true,
         FOREIGN_KEY: 'users.id',
-        DESCRIPTION: 'Admin who created the product'
+        DESCRIPTION: 'Admin who created the product (Page 2 PDF: UserID field with both capitals)'
       }
     }
   },
@@ -137,7 +137,7 @@ const ModelConfig = {
     },
     FIELD_TYPES: {
       ID: 'UUID_V4',
-      USER_ID: 'UUID_V4',  // Page 2 PDF Requirement: UserId field
+      UserId: 'UUID_V4',  // Page 2 PDF Requirement: UserId field (Order table casing)
       DESCRIPTION: 'string',
       TOTAL_PRICE: 'number',
       STATUS: 'string',

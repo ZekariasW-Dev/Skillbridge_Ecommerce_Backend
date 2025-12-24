@@ -60,18 +60,18 @@ const validateUsername = (username) => {
 };
 
 /**
- * Validate product data according to User Story 3 requirements
+ * Validate product data according to User Story 3 requirements and Page 5 PDF specifications
  * @param {object} product - Product object to validate
  * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
  */
 const validateProduct = (product) => {
   const errors = [];
   
-  // name: Must be a non-empty string (between 3 and 100 characters)
+  // name: Must be a non-empty string (between 3 and 100 characters) - Page 5 PDF Requirement
   if (!product.name || typeof product.name !== 'string' || product.name.trim().length === 0) {
     errors.push('Product name is required');
   } else if (product.name.trim().length < 3 || product.name.trim().length > 100) {
-    errors.push('Product name must be between 3 and 100 characters');
+    errors.push('Product name must be between 3 and 100 characters'); // Page 5 PDF Requirement
   }
   
   // description: Must be a non-empty string (at least 10 characters long)
@@ -105,7 +105,7 @@ const validateProduct = (product) => {
 };
 
 /**
- * Validate product data for partial updates (User Story 4)
+ * Validate product data for partial updates (User Story 4) and Page 5 PDF specifications
  * Only validates fields that are provided in the request
  * @param {object} product - Product object to validate (partial)
  * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
@@ -113,12 +113,12 @@ const validateProduct = (product) => {
 const validateProductUpdate = (product) => {
   const errors = [];
   
-  // name: Must be a non-empty string (between 3 and 100 characters) - only if provided
+  // name: Must be a non-empty string (between 3 and 100 characters) - Page 5 PDF Requirement - only if provided
   if (product.name !== undefined) {
     if (!product.name || typeof product.name !== 'string' || product.name.trim().length === 0) {
       errors.push('Product name must be a non-empty string');
     } else if (product.name.trim().length < 3 || product.name.trim().length > 100) {
-      errors.push('Product name must be between 3 and 100 characters');
+      errors.push('Product name must be between 3 and 100 characters'); // Page 5 PDF Requirement
     }
   }
   
