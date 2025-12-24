@@ -1,0 +1,885 @@
+openapi: 3.0.3
+info:
+  title: E-commerce RESTful API
+  description: |
+    Complete backend solution for an online shopping platform with user authentication, 
+    product management, order processing, and advanced features like search, pagination, 
+    rate limiting, and comprehensive error handling.
+    
+    ## Key Features
+    - 🔐 JWT-based authentication with role-based access control
+    - 📦 Complete product CRUD operations with search and pagination
+    - 🛒 Order management with transaction safety and stock validation
+    - 🛡️ Rate limiting and security features
+    - 📊 Comprehensive error handling and validation
+    - 🧪 Full test coverage with unit and integration tests
+    
+    ## Authentication
+    The API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:
+    ```
+    Authorization: Bearer <your-jwt-token>
+    ```
+    
+    ## Rate Limiting
+    The API implements multi-tier rate limiting:
+    - General API: 1000 requests per 15 minutes
+    - Authentication: 50 requests per 15 minutes
+    - Order Placement: 10 requests per 1 minute
+    - Admin Operations: 100 requests per 5 minutes
+    - Search Operations: 200 requests per 1 minute
+  version: 1.0.0
+  contact:
+    name: E-commerce API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /:
+    get:
+      tags:
+        - Health Check
+      summary: API Information
+      description: Get general information about the API
+      security: []
+      responses:
+        '200':
+          description: API information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiInfoResponse'
+
+  /health:
+    get:
+      tags:
+        - Health Check
+      summary: API Health Status
+      description: Check if the API is running and healthy
+      security: []
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register User
+      description: Create a new user account with validation
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              valid_user:
+                summary: Valid user registration
+                value:
+                  username: johndoe123
+                  email: john@example.com
+                  password: SecurePass123!
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          description: Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Email or username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login User
+      description: Authenticate user and receive JWT token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              user_login:
+                summary: User login
+                value:
+                  email: john@example.com
+                  password: SecurePass123!
+              admin_login:
+                summary: Admin login
+                value:
+                  email: admin@example.com
+                  password: AdminPass123!
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get All Products
+      description: Retrieve a paginated list of products with optional search
+      security: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: limit
+          in: query
+          description: Items per page (alternative to pageSize)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: search
+          in: query
+          description: Search term for product names
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '400':
+          description: Invalid pagination parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      tags:
+        - Products
+      summary: Create Product
+      description: Create a new product (Admin only)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+            examples:
+              laptop:
+                summary: Create laptop product
+                value:
+                  name: MacBook Pro 16-inch
+                  description: Professional laptop with M3 Pro chip, perfect for developers and creators
+                  price: 2499.99
+                  stock: 15
+                  category: Computers
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get Product Details
+      description: Retrieve detailed information about a specific product
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: Invalid product ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    put:
+      tags:
+        - Products
+      summary: Update Product
+      description: Update an existing product (Admin only, partial updates supported)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+            examples:
+              price_update:
+                summary: Update price and stock
+                value:
+                  price: 2299.99
+                  stock: 20
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: Validation errors or no fields provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    delete:
+      tags:
+        - Products
+      summary: Delete Product
+      description: Permanently delete a product from the catalog (Admin only)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Product UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteProductResponse'
+        '400':
+          description: Invalid product ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Admin role required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /orders:
+    post:
+      tags:
+        - Orders
+      summary: Place Order
+      description: Create a new order with multiple products
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+            examples:
+              with_description:
+                summary: Order with custom description
+                value:
+                  description: Birthday gift for my friend - gaming setup
+                  products:
+                    - productId: product-uuid-123
+                      quantity: 2
+                    - productId: product-uuid-456
+                      quantity: 1
+              auto_description:
+                summary: Order with auto-generated description
+                value:
+                  products:
+                    - productId: product-uuid-123
+                      quantity: 1
+      responses:
+        '201':
+          description: Order placed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        '400':
+          description: Validation errors or insufficient stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Orders
+      summary: View Order History
+      description: Retrieve the authenticated user's order history
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Order history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderHistoryResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Base Response Schemas
+    BaseResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+        - success
+        - message
+        - errors
+
+    ErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: false
+            object:
+              type: object
+              nullable: true
+              example: null
+
+    # Health Check Schemas
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: OK
+        message:
+          type: string
+          example: E-commerce API is running
+        timestamp:
+          type: string
+          format: date-time
+        environment:
+          type: string
+          example: development
+
+    ApiInfoResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            message:
+              type: string
+              example: E-commerce RESTful API Backend
+            version:
+              type: string
+              example: 1.0.0
+            endpoints:
+              type: object
+              properties:
+                authentication:
+                  type: string
+                  example: "/auth (POST /register, POST /login)"
+                products:
+                  type: string
+                  example: "/products (GET, POST, PUT, DELETE)"
+                orders:
+                  type: string
+                  example: "/orders (GET, POST)"
+                health:
+                  type: string
+                  example: "/health"
+
+    # Authentication Schemas
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          pattern: '^[a-zA-Z][a-zA-Z0-9]{2,29}$'
+          description: Alphanumeric only, 3-30 characters, must start with letter
+          example: johndoe123
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          minLength: 8
+          description: Very strong password (8+ chars, uppercase, lowercase, numbers, special characters)
+          example: SecurePass123!
+      required:
+        - username
+        - email
+        - password
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          example: SecurePass123!
+      required:
+        - email
+        - password
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [user, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    RegisterResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              $ref: '#/components/schemas/User'
+
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              type: object
+              properties:
+                token:
+                  type: string
+                  example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                user:
+                  $ref: '#/components/schemas/User'
+
+    # Product Schemas
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        price:
+          type: number
+          minimum: 0.01
+        stock:
+          type: integer
+          minimum: 0
+        category:
+          type: string
+          minLength: 1
+        userId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+          example: MacBook Pro 16-inch
+        description:
+          type: string
+          minLength: 10
+          example: Professional laptop with M3 Pro chip, perfect for developers and creators
+        price:
+          type: number
+          minimum: 0.01
+          example: 2499.99
+        stock:
+          type: integer
+          minimum: 0
+          example: 15
+        category:
+          type: string
+          minLength: 1
+          example: Computers
+      required:
+        - name
+        - description
+        - price
+        - stock
+        - category
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+        price:
+          type: number
+          minimum: 0.01
+        stock:
+          type: integer
+          minimum: 0
+        category:
+          type: string
+          minLength: 1
+
+    ProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              $ref: '#/components/schemas/Product'
+
+    ProductListResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            products:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+            currentPage:
+              type: integer
+              example: 1
+            pageSize:
+              type: integer
+              example: 10
+            totalPages:
+              type: integer
+              example: 5
+            totalProducts:
+              type: integer
+              example: 50
+
+    DeleteProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              type: object
+              properties:
+                deletedProductId:
+                  type: string
+                  format: uuid
+                deletedProductName:
+                  type: string
+
+    # Order Schemas
+    OrderProduct:
+      type: object
+      properties:
+        productId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: number
+          minimum: 0.01
+        itemTotal:
+          type: number
+          minimum: 0.01
+
+    Order:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, completed, cancelled]
+        total_price:
+          type: number
+          minimum: 0.01
+        description:
+          type: string
+          maxLength: 500
+        userId:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderProduct'
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        description:
+          type: string
+          maxLength: 500
+          description: Optional order description (auto-generated if not provided)
+        products:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                format: uuid
+              quantity:
+                type: integer
+                minimum: 1
+            required:
+              - productId
+              - quantity
+      required:
+        - products
+
+    OrderResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              $ref: '#/components/schemas/Order'
+
+    OrderHistoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/BaseResponse'
+        - type: object
+          properties:
+            success:
+              type: boolean
+              example: true
+            object:
+              type: array
+              items:
+                $ref: '#/components/schemas/Order'
+
+tags:
+  - name: Health Check
+    description: API health and information endpoints
+  - name: Authentication
+    description: User registration and login
+  - name: Products
+    description: Product management operations
+  - name: Orders
+    description: Order placement and history
