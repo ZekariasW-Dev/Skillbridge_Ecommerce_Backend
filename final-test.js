@@ -28,8 +28,7 @@ const docFiles = [
   'docs/API_DOCUMENTATION.md',
   'docs/API_USAGE_GUIDE.md',
   'docs/openapi.yaml',
-  'PROJECT_STRUCTURE.md',
-  'CLEAN_CODE_GUIDE.md'
+  'PROJECT_STRUCTURE_FINAL.md'
 ];
 
 let docCount = 0;
@@ -47,17 +46,20 @@ console.log(`\n📚 Documentation: ${docCount}/${docFiles.length} files present`
 // Test 3: Project Structure
 console.log('\n3️⃣ Verifying project structure...');
 const requiredDirs = [
+  'config',
   'src/controllers',
   'src/models',
   'src/routes',
   'src/middlewares',
   'src/utils',
   'src/services',
-  'tests/api',
-  'tests/verification',
-  '__tests__',
+  'tests/unit',
+  'tests/integration',
+  'tests/e2e',
   'scripts',
-  'docs'
+  'docs',
+  'logs',
+  'temp'
 ];
 
 let structureCount = 0;

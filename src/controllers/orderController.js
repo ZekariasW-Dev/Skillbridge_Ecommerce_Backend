@@ -1,6 +1,6 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
-const db = require('../config/db');
+const db = require('../../config/database');
 const { createResponse } = require('../utils/responses');
 
 /**
