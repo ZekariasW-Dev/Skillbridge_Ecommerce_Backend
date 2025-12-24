@@ -94,9 +94,16 @@ const createOrder = async (req, res) => {
           throw new Error(`PRODUCT_NOT_FOUND:Product with ID ${item.productId} does not exist`);
         }
         
-        // Verify sufficient stock (User Story 9 requirement - 400 Bad Request)
+        // Check stock availability (User Story 9 requirement + Page 10 PDF requirement)
+        // Page 10 PDF: "Insufficient stock for Product X" (where X is the name of the item)
         if (product.stock < item.quantity) {
-          throw new Error(`INSUFFICIENT_STOCK:Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
+          const error = new Error(`Insufficient stock for ${product.name}`);
+          error.type = 'INSUFFICIENT_STOCK';
+          error.productId = item.productId;
+          error.productName = product.name;
+          error.availableStock = product.stock;
+          error.requestedQuantity = item.quantity;
+          throw error;
         }
         
         // Calculate total_price on backend using database prices (User Story 9 requirement)

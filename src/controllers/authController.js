@@ -69,10 +69,11 @@ const register = asyncErrorHandler(async (req, res) => {
   });
   
   // Step 8: Return success response (201 Created) without sensitive information
+  // Page 4 PDF Requirement: "Upon successful registration, the API should return a 201 Created status code and a success message"
   // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(201).json(createResponse(
     true, 
-    'User registered successfully', 
+    'Registration Success: User registered successfully', // Page 4 PDF: Message must contain "Success"
     {
       id: user.id,
       username: user.username,
