@@ -44,7 +44,34 @@ const requireAdmin = asyncErrorHandler((req, res, next) => {
   next();
 });
 
+/**
+ * Middleware to check if user is Admin (Pages 5, 6, and 9 requirement)
+ * Must be used after authenticateToken
+ * Returns 403 Forbidden if user is not an Admin
+ * 
+ * This middleware provides admin role protection for endpoints that should
+ * only be accessible to users with admin privileges as specified in:
+ * - Page 5: Product management operations
+ * - Page 6: Product modification and deletion
+ * - Page 9: Administrative functions
+ */
+const isAdmin = asyncErrorHandler((req, res, next) => {
+  // Ensure user is authenticated first
+  if (!req.user) {
+    throw new AuthenticationError('Authentication required to access this resource');
+  }
+
+  // Check if user has admin role
+  if (!req.user.role || req.user.role !== 'admin') {
+    throw new AuthorizationError('Admin privileges required. This resource is restricted to administrators only.');
+  }
+
+  // User is authenticated and has admin role, proceed
+  next();
+});
+
 module.exports = {
   authenticateToken,
-  requireAdmin
+  requireAdmin,
+  isAdmin
 };

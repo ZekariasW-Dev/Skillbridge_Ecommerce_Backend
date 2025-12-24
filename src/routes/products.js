@@ -6,7 +6,7 @@ const {
   getProductById, 
   deleteProduct 
 } = require('../controllers/productController');
-const { authenticateToken, requireAdmin } = require('../middlewares/auth');
+const { authenticateToken, requireAdmin, isAdmin } = require('../middlewares/auth');
 const { adminLimiter, searchLimiter } = require('../middlewares/rateLimiter');
 const { 
   cacheProductList, 

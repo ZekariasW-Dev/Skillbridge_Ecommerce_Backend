@@ -98,9 +98,7 @@ const testRegistrationResponseStructure = () => {
   const usesCreateResponse = authControllerContent.includes('createResponse(');
   
   // Check for success flag
-  const hasSuccessFlag = authControllerContent.includes('createResponse(\n    true,') ||
-                        authControllerContent.includes('createResponse(true,') ||
-                        authControllerContent.match(/createResponse\(\s*true\s*,/);
+  const hasSuccessFlag = authControllerContent.match(/createResponse\(\s*true\s*,/) !== null;
   
   // Check for user data in response
   const hasUserData = authControllerContent.includes('id: user.id') &&

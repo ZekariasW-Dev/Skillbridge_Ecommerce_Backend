@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { authenticateToken, requireAdmin } = require('../../src/middlewares/auth');
+const { authenticateToken, requireAdmin, isAdmin } = require('../../src/middlewares/auth');
 
 // Mock JWT
 jest.mock('jsonwebtoken');
@@ -276,6 +276,93 @@ describe('Auth Middleware', () => {
       requireAdmin(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isAdmin', () => {
+    it('should allow admin user to proceed', () => {
+      req.user = {
+        userId: 'admin-id',
+        username: 'admin',
+        role: 'admin'
+      };
+
+      isAdmin(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('should block non-admin user', () => {
+      req.user = {
+        userId: 'user-id',
+        username: 'user',
+        role: 'user'
+      };
+
+      isAdmin(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: expect.stringContaining('Admin privileges required')
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should block unauthenticated user', () => {
+      // req.user is undefined
+
+      isAdmin(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: expect.stringContaining('Authentication required')
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should block user with null role', () => {
+      req.user = {
+        userId: 'user-id',
+        username: 'user',
+        role: null
+      };
+
+      isAdmin(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: expect.stringContaining('Admin privileges required')
+        })
+      );
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it('should block user with undefined role', () => {
+      req.user = {
+        userId: 'user-id',
+        username: 'user'
+        // role is undefined
+      };
+
+      isAdmin(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: expect.stringContaining('Admin privileges required')
+        })
+      );
       expect(next).not.toHaveBeenCalled();
     });
   });
