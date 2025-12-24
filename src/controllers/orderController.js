@@ -4,7 +4,7 @@ const db = require('../config/db');
 const { createResponse } = require('../utils/responses');
 
 /**
- * Place a New Order endpoint - User Story 9
+ * Place a New Order endpoint - User Story 9 + Page 2 & 10 PDF Requirements
  * POST /orders
  * 
  * Acceptance Criteria:
@@ -13,6 +13,9 @@ const { createResponse } = require('../utils/responses');
  * 3. Business Logic: verify stock, handle in database transaction, calculate total_price on backend
  * 4. Success: 201 Created with order details (order_id, status, total_price, products, description)
  * 5. Failure: 400 Bad Request for insufficient stock, 404 Not Found for non-existent products
+ * 
+ * Page 2 PDF Requirement: Order Table has Description: string field
+ * Page 10 PDF Requirement: Allow user to enter short description OR have server fill it automatically
  */
 const createOrder = async (req, res) => {
   try {
@@ -29,7 +32,9 @@ const createOrder = async (req, res) => {
       ));
     }
     
-    // Validate description if provided (Page 2 PDF requirement)
+    // Validate description if provided (Page 2 & 10 PDF requirement)
+    // Page 2 PDF: Order Table has Description: string field
+    // Page 10 PDF: Allow user to enter short description or auto-generate
     let orderDescription = description;
     if (description !== undefined) {
       if (typeof description !== 'string') {
@@ -110,7 +115,8 @@ const createOrder = async (req, res) => {
         productNames.push(`${item.quantity}x ${product.name}`);
       }
       
-      // Generate description if not provided (Page 2 PDF requirement)
+      // Generate description if not provided (Page 2 & 10 PDF requirement)
+      // Page 10 PDF: "have the server fill it in automatically"
       if (!orderDescription) {
         if (productNames.length === 1) {
           orderDescription = `Order for ${productNames[0]}`;
@@ -129,10 +135,12 @@ const createOrder = async (req, res) => {
         }
       }
       
-      // Create order with calculated total_price and description (User Story 9 + Page 2 PDF requirement)
+      // Create order with calculated total_price and description (User Story 9 + Page 2 & 10 PDF requirement)
+      // Page 2 PDF: Order Table includes Description: string field
+      // Page 10 PDF: Description can be user-provided or auto-generated
       const order = await Order.create({
         userId,
-        description: orderDescription,
+        description: orderDescription, // Page 2 & 10 PDF: Description field implementation
         totalPrice: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
         status: 'pending', // Default status as per User Story 9
         products: orderProducts
