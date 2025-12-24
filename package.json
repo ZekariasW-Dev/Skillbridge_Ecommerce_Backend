@@ -7,6 +7,10 @@
     "start": "node server.js",
     "dev": "node server.js",
     "setup-admin": "node setup-admin.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "node run-unit-tests.js",
     "test-api": "node test-api.js",
     "test-login": "node test-login.js",
     "test-create-product": "node test-create-product.js",
@@ -31,6 +35,10 @@
     "mongodb": "^6.3.0",
     "uuid": "^9.0.1"
   },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
+  },
   "keywords": [
     "ecommerce",
     "api",
@@ -38,5 +46,25 @@
     "nodejs"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/__tests__/setup.js"],
+    "testMatch": [
+      "**/__tests__/**/*.test.js",
+      "**/?(*.)+(spec|test).js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/config/db.js",
+      "!**/node_modules/**"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": [
+      "text",
+      "lcov",
+      "html"
+    ],
+    "testTimeout": 10000
+  }
 }

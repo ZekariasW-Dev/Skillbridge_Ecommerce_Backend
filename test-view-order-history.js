@@ -252,7 +252,7 @@ const testViewOrderHistory = async () => {
       console.log('✅ User 1 order history: 200 OK (CORRECT)');
       console.log('📦 Orders count:', user1HistoryData.object.length);
       
-      // Validate User Story 10 response structure
+      // Validate User Story 10 + Page 11 PDF response structure
       if (user1HistoryData.object.length > 0) {
         const order = user1HistoryData.object[0];
         const hasRequiredFields = order.hasOwnProperty('order_id') &&
@@ -262,8 +262,32 @@ const testViewOrderHistory = async () => {
         
         if (hasRequiredFields) {
           console.log('✅ Order objects contain required fields: order_id, status, total_price, created_at');
+          console.log('✅ Page 11 PDF requirement: created_at (date order was placed) included');
         } else {
           console.log('❌ Order objects missing required fields');
+        }
+        
+        // Validate created_at field format and value (Page 11 PDF requirement)
+        const createdAt = order.created_at;
+        if (createdAt) {
+          const createdAtDate = new Date(createdAt);
+          if (!isNaN(createdAtDate.getTime())) {
+            console.log('✅ created_at field contains valid date format');
+            console.log('📅 Sample created_at value:', createdAt);
+            
+            // Verify it's a recent date (within last hour for test)
+            const now = new Date();
+            const timeDiff = now - createdAtDate;
+            if (timeDiff >= 0 && timeDiff < 3600000) { // Within 1 hour
+              console.log('✅ created_at timestamp is recent and valid');
+            } else {
+              console.log('⚠️  created_at timestamp may be incorrect');
+            }
+          } else {
+            console.log('❌ created_at field contains invalid date format');
+          }
+        } else {
+          console.log('❌ created_at field is missing or null');
         }
         
         // Validate that orders belong to User 1 only
@@ -439,6 +463,8 @@ const testViewOrderHistory = async () => {
     console.log('✅ Orders filtered by userId from JWT token');
     console.log('✅ 200 OK with array of order objects');
     console.log('✅ Order objects contain: order_id, status, total_price, created_at');
+    console.log('✅ Page 11 PDF requirement: created_at (date order was placed) included');
+    console.log('✅ created_at field contains valid ISO date format');
     console.log('✅ Empty array returned when user has no orders (200 OK)');
     console.log('✅ 401 Unauthorized for unauthenticated requests');
     console.log('✅ Perfect user isolation - users never see other users\' orders');

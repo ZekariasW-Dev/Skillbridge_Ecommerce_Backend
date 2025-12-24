@@ -219,6 +219,8 @@ const createOrder = async (req, res) => {
  * 4. Success: 200 OK with array of order objects (order_id, status, total_price, created_at)
  * 5. Empty array if user has no orders (200 OK)
  * 6. Failure: 401 Unauthorized for unauthenticated users
+ * 
+ * Page 11 PDF Requirement: created_at (the date the order was placed) must be included
  */
 const getMyOrders = async (req, res) => {
   try {
