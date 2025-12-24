@@ -69,6 +69,7 @@ const register = asyncErrorHandler(async (req, res) => {
   });
   
   // Step 8: Return success response (201 Created) without sensitive information
+  // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(201).json(createResponse(
     true, 
     'User registered successfully', 
@@ -78,6 +79,7 @@ const register = asyncErrorHandler(async (req, res) => {
       email: user.email,
       role: user.role,
       createdAt: user.createdAt
+      // Note: password is explicitly excluded for security (Page 4 PDF requirement)
     }
   ));
 });
@@ -133,17 +135,13 @@ const login = asyncErrorHandler(async (req, res) => {
   );
   
   // Return 200 OK with JWT for client to use in subsequent requests
+  // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(200).json(createResponse(
     true, 
     'Login successful', 
     {
       token,
-      user: {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        role: user.role || 'user'
-      }
+      user: User.toSafeObject(user) // Ensures password is never included
     }
   ));
 });

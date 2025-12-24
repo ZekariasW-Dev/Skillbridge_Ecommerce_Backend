@@ -72,6 +72,29 @@ class User {
   static async validatePassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
+
+  /**
+   * Remove sensitive information from user object for JSON serialization
+   * Page 4 PDF Requirement: Sensitive information must never be returned in API response
+   * @param {object} user - User object
+   * @returns {object} - User object without sensitive fields
+   */
+  static toSafeObject(user) {
+    if (!user) return null;
+    
+    const { password, ...safeUser } = user;
+    return safeUser;
+  }
+
+  /**
+   * Transform user object for JSON response (removes password)
+   * This method ensures passwords are never accidentally included in responses
+   * @param {object} user - User object
+   * @returns {object} - Safe user object for API responses
+   */
+  static toJSON(user) {
+    return User.toSafeObject(user);
+  }
 }
 
 module.exports = User;
