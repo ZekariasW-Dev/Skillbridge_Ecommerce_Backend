@@ -8,16 +8,27 @@ const {
 } = require('../controllers/productController');
 const { authenticateToken, requireAdmin } = require('../middlewares/auth');
 const { adminLimiter, searchLimiter } = require('../middlewares/rateLimiter');
+const { 
+  cacheProductList, 
+  cacheProductDetail, 
+  invalidateProductCache,
+  cacheStats,
+  flushCache
+} = require('../middlewares/cache');
 
 const router = express.Router();
 
-// Public routes with search rate limiting
-router.get('/', searchLimiter, getAllProducts);
-router.get('/:id', getProductById);
+// Cache management routes (admin only)
+router.get('/cache/stats', authenticateToken, requireAdmin, cacheStats);
+router.delete('/cache/flush', authenticateToken, requireAdmin, flushCache);
 
-// Admin only routes with admin rate limiting
-router.post('/', adminLimiter, authenticateToken, requireAdmin, createProduct);
-router.put('/:id', adminLimiter, authenticateToken, requireAdmin, updateProduct);
-router.delete('/:id', adminLimiter, authenticateToken, requireAdmin, deleteProduct);
+// Public routes with caching and search rate limiting
+router.get('/', searchLimiter, cacheProductList, getAllProducts);
+router.get('/:id', cacheProductDetail, getProductById);
+
+// Admin only routes with cache invalidation and admin rate limiting
+router.post('/', adminLimiter, authenticateToken, requireAdmin, invalidateProductCache, createProduct);
+router.put('/:id', adminLimiter, authenticateToken, requireAdmin, invalidateProductCache, updateProduct);
+router.delete('/:id', adminLimiter, authenticateToken, requireAdmin, invalidateProductCache, deleteProduct);
 
 module.exports = router;
