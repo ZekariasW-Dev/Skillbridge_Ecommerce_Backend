@@ -75,12 +75,44 @@ const ModelConfig = {
   
   ORDER: {
     COLLECTION: 'orders',
+    REQUIRED_FIELDS: ['userId', 'description', 'totalPrice', 'status', 'products'],
+    OPTIONAL_FIELDS: ['createdAt', 'updatedAt'],
     STATUSES: {
       PENDING: 'pending',
       PROCESSING: 'processing',
       SHIPPED: 'shipped',
       DELIVERED: 'delivered',
       CANCELLED: 'cancelled'
+    },
+    FIELD_TYPES: {
+      ID: 'UUID_V4',
+      USER_ID: 'UUID_V4',
+      DESCRIPTION: 'string',
+      TOTAL_PRICE: 'number',
+      STATUS: 'string',
+      PRODUCTS: 'array',
+      CREATED_AT: 'Date',
+      UPDATED_AT: 'Date'
+    },
+    VALIDATION_RULES: {
+      DESCRIPTION: {
+        TYPE: 'string',
+        MAX_LENGTH: 500,
+        REQUIRED: false,
+        AUTO_GENERATE: true
+      },
+      TOTAL_PRICE: {
+        TYPE: 'number',
+        MIN_VALUE: 0,
+        DECIMAL_PLACES: 2,
+        REQUIRED: true
+      },
+      STATUS: {
+        TYPE: 'string',
+        ENUM: ['pending', 'processing', 'shipped', 'delivered', 'cancelled'],
+        DEFAULT: 'pending',
+        REQUIRED: true
+      }
     }
   }
 };
@@ -114,7 +146,11 @@ const SchemaInfo = {
         collection: ModelConfig.ORDER.COLLECTION,
         primaryKey: ModelConfig.ID_FIELD,
         keyType: ModelConfig.ID_TYPE,
-        statuses: Object.values(ModelConfig.ORDER.STATUSES)
+        requiredFields: ModelConfig.ORDER.REQUIRED_FIELDS,
+        optionalFields: ModelConfig.ORDER.OPTIONAL_FIELDS,
+        statuses: Object.values(ModelConfig.ORDER.STATUSES),
+        fieldTypes: ModelConfig.ORDER.FIELD_TYPES,
+        validationRules: ModelConfig.ORDER.VALIDATION_RULES
       }
     }
   }),
