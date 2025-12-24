@@ -4,8 +4,11 @@
  * @returns {boolean} - True if valid email format
  */
 const validateEmail = (email) => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  if (!email || typeof email !== 'string') return false;
+  
+  // More strict email validation
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  return emailRegex.test(email.trim());
 };
 
 /**
@@ -51,7 +54,7 @@ const validateUsername = (username) => {
   
   if (!username || username.trim().length === 0) {
     errors.push('Username is required');
-  } else if (!/^[a-zA-Z0-9]+$/.test(username)) {
+  } else if (!/^[a-zA-Z0-9]+$/.test(username.trim())) {
     errors.push('Username must contain only letters and numbers (no spaces, special characters, or symbols allowed)');
   }
   

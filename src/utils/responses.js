@@ -11,7 +11,7 @@ const createResponse = (success, message, object = null, errors = null) => {
     success,
     message,
     object,
-    errors
+    errors: errors || []
   };
 };
 
@@ -34,7 +34,7 @@ const createPaginatedResponse = (success, message, object = [], pageNumber = 1, 
     PageNumber: pageNumber,  // Page 3 PDF Requirement: Use PageNumber (capitalized)
     pageSize,
     TotalSize: totalSize,    // Page 3 PDF Requirement: Use TotalSize (capitalized)
-    errors
+    errors: errors || []
   };
 };
 
@@ -60,7 +60,7 @@ const createProductListResponse = (success, message, products = [], currentPage 
     totalPages,
     totalProducts,
     products,
-    errors
+    errors: errors || []
   };
 };
 

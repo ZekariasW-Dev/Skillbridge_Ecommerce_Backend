@@ -62,9 +62,47 @@ const ModelConfig = {
   // Model-specific configurations
   USER: {
     COLLECTION: 'users',
+    REQUIRED_FIELDS: ['username', 'email', 'password', 'role'], // Page 5 PDF Requirement: role field for admin functionality
+    OPTIONAL_FIELDS: ['createdAt', 'updatedAt'],
     ROLES: {
       USER: 'user',
       ADMIN: 'admin'
+    },
+    FIELD_TYPES: {
+      ID: 'UUID_V4',
+      USERNAME: 'string',
+      EMAIL: 'string',
+      PASSWORD: 'string',
+      ROLE: 'string', // Page 5 PDF Requirement: role field to support 'Admin' role
+      CREATED_AT: 'Date',
+      UPDATED_AT: 'Date'
+    },
+    VALIDATION_RULES: {
+      USERNAME: {
+        TYPE: 'string',
+        REQUIRED: true,
+        PATTERN: '^[a-zA-Z0-9]+$',
+        DESCRIPTION: 'Username must contain only letters and numbers'
+      },
+      EMAIL: {
+        TYPE: 'string',
+        REQUIRED: true,
+        FORMAT: 'email',
+        DESCRIPTION: 'Valid email address required'
+      },
+      PASSWORD: {
+        TYPE: 'string',
+        REQUIRED: true,
+        MIN_LENGTH: 8,
+        DESCRIPTION: 'Password must meet security requirements'
+      },
+      ROLE: {
+        TYPE: 'string',
+        REQUIRED: true,
+        ENUM: ['user', 'admin'],
+        DEFAULT: 'user',
+        DESCRIPTION: 'User role - Page 5 PDF requirement for admin functionality'
+      }
     }
   },
   
@@ -185,13 +223,20 @@ const SchemaInfo = {
         collection: ModelConfig.USER.COLLECTION,
         primaryKey: ModelConfig.ID_FIELD,
         keyType: ModelConfig.ID_TYPE,
-        roles: Object.values(ModelConfig.USER.ROLES)
+        requiredFields: ModelConfig.USER.REQUIRED_FIELDS,
+        optionalFields: ModelConfig.USER.OPTIONAL_FIELDS,
+        roles: Object.values(ModelConfig.USER.ROLES),
+        fieldTypes: ModelConfig.USER.FIELD_TYPES,
+        validationRules: ModelConfig.USER.VALIDATION_RULES
       },
       Product: {
         collection: ModelConfig.PRODUCT.COLLECTION,
         primaryKey: ModelConfig.ID_FIELD,
         keyType: ModelConfig.ID_TYPE,
-        requiredFields: ModelConfig.PRODUCT.REQUIRED_FIELDS
+        requiredFields: ModelConfig.PRODUCT.REQUIRED_FIELDS,
+        optionalFields: ModelConfig.PRODUCT.OPTIONAL_FIELDS,
+        fieldTypes: ModelConfig.PRODUCT.FIELD_TYPES,
+        validationRules: ModelConfig.PRODUCT.VALIDATION_RULES
       },
       Order: {
         collection: ModelConfig.ORDER.COLLECTION,

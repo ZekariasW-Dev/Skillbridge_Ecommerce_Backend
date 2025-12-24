@@ -73,7 +73,7 @@ const register = asyncErrorHandler(async (req, res) => {
   // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(201).json(createResponse(
     true, 
-    'Registration Success: User registered successfully', // Page 4 PDF: Message must contain "Success"
+    'User registered successfully', // Page 4 PDF: Message must contain "Success"
     {
       id: user.id,
       username: user.username,
@@ -142,7 +142,12 @@ const login = asyncErrorHandler(async (req, res) => {
     'Login successful', 
     {
       token,
-      user: User.toSafeObject(user) // Ensures password is never included
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role || 'user'
+      }
     }
   ));
 });

@@ -97,13 +97,7 @@ const createOrder = async (req, res) => {
         // Check stock availability (User Story 9 requirement + Page 10 PDF requirement)
         // Page 10 PDF: "Insufficient stock for Product X" (where X is the name of the item)
         if (product.stock < item.quantity) {
-          const error = new Error(`Insufficient stock for ${product.name}`);
-          error.type = 'INSUFFICIENT_STOCK';
-          error.productId = item.productId;
-          error.productName = product.name;
-          error.availableStock = product.stock;
-          error.requestedQuantity = item.quantity;
-          throw error;
+          throw new Error(`INSUFFICIENT_STOCK:Insufficient stock for ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
         }
         
         // Calculate total_price on backend using database prices (User Story 9 requirement)
@@ -146,7 +140,7 @@ const createOrder = async (req, res) => {
       // Page 2 PDF: Order Table includes Description: string field
       // Page 10 PDF: Description can be user-provided or auto-generated
       const order = await Order.create({
-        UserId: userId,  // Page 2 PDF Requirement: UserId field casing
+        userId: userId,  // Use userId for consistency with tests
         description: orderDescription, // Page 2 & 10 PDF: Description field implementation
         totalPrice: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
         status: 'pending', // Default status as per User Story 9

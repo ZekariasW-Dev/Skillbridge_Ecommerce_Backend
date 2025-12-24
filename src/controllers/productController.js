@@ -40,7 +40,7 @@ const createProduct = async (req, res) => {
       price: parseFloat(price),
       stock: parseInt(stock),
       category: category.trim(),
-      UserID  // Page 2 PDF Requirement: UserID field (capitalized)
+      userId: UserID  // Use userId for consistency with tests
     });
     
     // Return 201 Created with newly created product data
