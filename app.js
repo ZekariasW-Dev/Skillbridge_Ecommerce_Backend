@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const { generalLimiter } = require('./src/middlewares/rateLimiter');
 
 // Import routes
 const authRoutes = require('./src/routes/auth');
@@ -7,6 +8,9 @@ const productRoutes = require('./src/routes/products');
 const orderRoutes = require('./src/routes/orders');
 
 const app = express();
+
+// Apply rate limiting to all requests
+app.use(generalLimiter);
 
 // Middleware
 app.use(cors());

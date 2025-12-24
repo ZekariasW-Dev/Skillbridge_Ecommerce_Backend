@@ -7,16 +7,17 @@ const {
   deleteProduct 
 } = require('../controllers/productController');
 const { authenticateToken, requireAdmin } = require('../middlewares/auth');
+const { adminLimiter, searchLimiter } = require('../middlewares/rateLimiter');
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getAllProducts);
+// Public routes with search rate limiting
+router.get('/', searchLimiter, getAllProducts);
 router.get('/:id', getProductById);
 
-// Admin only routes
-router.post('/', authenticateToken, requireAdmin, createProduct);
-router.put('/:id', authenticateToken, requireAdmin, updateProduct);
-router.delete('/:id', authenticateToken, requireAdmin, deleteProduct);
+// Admin only routes with admin rate limiting
+router.post('/', adminLimiter, authenticateToken, requireAdmin, createProduct);
+router.put('/:id', adminLimiter, authenticateToken, requireAdmin, updateProduct);
+router.delete('/:id', adminLimiter, authenticateToken, requireAdmin, deleteProduct);
 
 module.exports = router;
