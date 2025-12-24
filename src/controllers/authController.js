@@ -13,54 +13,62 @@ const {
  * User registration endpoint
  * POST /auth/register
  * 
+ * Page 4 PDF Requirement: "The system must check that the email/username is not already registered"
+ * 
  * Acceptance Criteria:
  * 1. Username: Plaintext, required, must be unique, alphanumeric only
  * 2. Email: Plaintext, required, must be unique, valid format
  * 3. Password: Plaintext during submission, stored as hashed value using bcrypt
  * 4. Returns 201 Created on success, 400 Bad Request on validation failure
  * 5. Sensitive information (password) must never be returned in response
+ * 6. Professional approach: Check database for duplicates BEFORE attempting creation
  */
 const register = asyncErrorHandler(async (req, res) => {
   const { username, email, password } = req.body;
   
-  // Check if all required fields are provided
+  // Step 1: Input validation - Check if all required fields are provided
   if (!username || !email || !password) {
     throw new ValidationError('Registration failed', ['Username, email, and password are required']);
   }
   
-  // Validate username
+  // Step 2: Format validation - Validate username format (Page 4 PDF requirement)
   const usernameErrors = validateUsername(username);
   if (usernameErrors.length > 0) {
     throw new ValidationError('Registration failed', usernameErrors);
   }
   
-  // Validate email format
+  // Step 3: Format validation - Validate email format
   if (!validateEmail(email)) {
     throw new ValidationError('Registration failed', ['Email must be a valid email address format (e.g., user@example.com)']);
   }
   
-  // Validate password
+  // Step 4: Format validation - Validate password strength (Page 4 PDF requirement)
   const passwordErrors = validatePassword(password);
   if (passwordErrors.length > 0) {
     throw new ValidationError('Registration failed', passwordErrors);
   }
   
-  // Check if email is already registered
-  const existingUserByEmail = await User.findByEmail(email);
+  // Step 5: Database uniqueness check - Professional approach (Page 4 PDF requirement)
+  // Check email uniqueness BEFORE attempting to create user
+  const existingUserByEmail = await User.findByEmail(email.toLowerCase().trim());
   if (existingUserByEmail) {
-    throw new ConflictError('Registration failed', ['The email is already registered']);
+    throw new ConflictError('Registration failed', ['The email address is already registered']);
   }
   
-  // Check if username is already taken
-  const existingUserByUsername = await User.findByUsername(username);
+  // Step 6: Database uniqueness check - Check username uniqueness BEFORE attempting to create user
+  const existingUserByUsername = await User.findByUsername(username.trim());
   if (existingUserByUsername) {
     throw new ConflictError('Registration failed', ['The username is already taken']);
   }
   
-  // Create user (password will be hashed in the model)
-  const user = await User.create({ username, email, password });
+  // Step 7: Create user - Safe to create since we've verified uniqueness
+  const user = await User.create({ 
+    username: username.trim(), 
+    email: email.toLowerCase().trim(), 
+    password 
+  });
   
-  // Return success response (201 Created) without sensitive information
+  // Step 8: Return success response (201 Created) without sensitive information
   res.status(201).json(createResponse(
     true, 
     'User registered successfully', 
