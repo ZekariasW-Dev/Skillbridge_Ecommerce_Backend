@@ -1,6 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const { generalLimiter } = require('./src/middlewares/rateLimiter');
+const { 
+  globalErrorHandler, 
+  notFoundHandler, 
+  setupProcessHandlers 
+} = require('./src/middlewares/errorHandler');
 
 // Import routes
 const authRoutes = require('./src/routes/auth');
@@ -9,12 +14,25 @@ const orderRoutes = require('./src/routes/orders');
 
 const app = express();
 
+// Setup process handlers for uncaught exceptions and unhandled rejections
+setupProcessHandlers();
+
 // Apply rate limiting to all requests
 app.use(generalLimiter);
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Request logging middleware (development only)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    const timestamp = new Date().toISOString();
+    console.log(`📝 ${timestamp} - ${req.method} ${req.originalUrl} - IP: ${req.ip}`);
+    next();
+  });
+}
 
 // Routes
 app.use('/auth', authRoutes);
@@ -23,28 +41,34 @@ app.use('/orders', orderRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'E-commerce API is running' });
-});
-
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found',
-    object: null,
-    errors: ['The requested endpoint does not exist']
+  res.json({ 
+    status: 'OK', 
+    message: 'E-commerce API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Error handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    message: 'Internal server error',
-    object: null,
-    errors: ['An unexpected error occurred']
+// API info endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'E-commerce RESTful API Backend',
+    version: '1.0.0',
+    endpoints: {
+      authentication: '/auth (POST /register, POST /login)',
+      products: '/products (GET, POST, PUT, DELETE)',
+      orders: '/orders (GET, POST)',
+      health: '/health'
+    },
+    documentation: 'See README.md for detailed API documentation'
   });
 });
+
+// Handle 404 errors for undefined routes
+app.use('*', notFoundHandler);
+
+// Global error handling middleware (must be last)
+app.use(globalErrorHandler);
 
 module.exports = app;

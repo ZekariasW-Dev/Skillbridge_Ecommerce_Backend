@@ -17,7 +17,8 @@
     "test-delete-product": "node test-delete-product.js",
     "test-place-order": "node test-place-order.js",
     "test-view-order-history": "node test-view-order-history.js",
-    "test-validation-security": "node test-validation-security.js"
+    "test-validation-security": "node test-validation-security.js",
+    "test-error-handling": "node test-error-handling.js"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
