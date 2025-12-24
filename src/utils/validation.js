@@ -11,7 +11,7 @@ const validateEmail = (email) => {
 /**
  * Validate password according to very strong requirements (Page 4 PDF)
  * @param {string} password - Password to validate
- * @returns {string[]} - Array of validation error messages
+ * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
  */
 const validatePassword = (password) => {
   const errors = [];
@@ -36,14 +36,15 @@ const validatePassword = (password) => {
     errors.push('Password must include at least one special character (e.g., !@#$%^&*)');
   }
   
-  return errors;
+  // Page 3 PDF Requirement: Return null when no errors, not empty array
+  return errors.length > 0 ? errors : null;
 };
 
 /**
  * Validate username according to requirements (Page 4 PDF)
  * Username must contain only letters and numbers (alphanumeric)
  * @param {string} username - Username to validate
- * @returns {string[]} - Array of validation error messages
+ * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
  */
 const validateUsername = (username) => {
   const errors = [];
@@ -54,13 +55,14 @@ const validateUsername = (username) => {
     errors.push('Username must contain only letters and numbers (no spaces, special characters, or symbols allowed)');
   }
   
-  return errors;
+  // Page 3 PDF Requirement: Return null when no errors, not empty array
+  return errors.length > 0 ? errors : null;
 };
 
 /**
  * Validate product data according to User Story 3 requirements
  * @param {object} product - Product object to validate
- * @returns {string[]} - Array of validation error messages
+ * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
  */
 const validateProduct = (product) => {
   const errors = [];
@@ -98,14 +100,15 @@ const validateProduct = (product) => {
     errors.push('Product category is required');
   }
   
-  return errors;
+  // Page 3 PDF Requirement: Return null when no errors, not empty array
+  return errors.length > 0 ? errors : null;
 };
 
 /**
  * Validate product data for partial updates (User Story 4)
  * Only validates fields that are provided in the request
  * @param {object} product - Product object to validate (partial)
- * @returns {string[]} - Array of validation error messages
+ * @returns {string[]|null} - Array of validation error messages or null if no errors (Page 3 PDF requirement)
  */
 const validateProductUpdate = (product) => {
   const errors = [];
@@ -149,7 +152,8 @@ const validateProductUpdate = (product) => {
     }
   }
   
-  return errors;
+  // Page 3 PDF Requirement: Return null when no errors, not empty array
+  return errors.length > 0 ? errors : null;
 };
 
 module.exports = {

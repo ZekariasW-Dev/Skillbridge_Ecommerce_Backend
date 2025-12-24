@@ -21,9 +21,10 @@ class AppError extends Error {
 }
 
 class ValidationError extends AppError {
-  constructor(message, errors = []) {
+  constructor(message, errors = null) {
     super(message, 400);
-    this.errors = errors;
+    // Page 3 PDF Requirement: Errors should be null when no specific errors, not empty array
+    this.errors = (errors && Array.isArray(errors) && errors.length > 0) ? errors : null;
     this.name = 'ValidationError';
   }
 }
@@ -50,15 +51,19 @@ class NotFoundError extends AppError {
 }
 
 class ConflictError extends AppError {
-  constructor(message = 'Resource conflict') {
+  constructor(message = 'Resource conflict', errors = null) {
     super(message, 409);
+    // Page 3 PDF Requirement: Errors should be null when no specific errors, not empty array
+    this.errors = (errors && Array.isArray(errors) && errors.length > 0) ? errors : null;
     this.name = 'ConflictError';
   }
 }
 
 class DatabaseError extends AppError {
-  constructor(message = 'Database operation failed') {
+  constructor(message = 'Database operation failed', errors = null) {
     super(message, 500);
+    // Page 3 PDF Requirement: Errors should be null when no specific errors, not empty array
+    this.errors = (errors && Array.isArray(errors) && errors.length > 0) ? errors : null;
     this.name = 'DatabaseError';
   }
 }
@@ -73,7 +78,7 @@ class DatabaseError extends AppError {
 const handleDatabaseError = (error) => {
   let message = 'Database operation failed';
   let statusCode = 500;
-  let errors = [];
+  let errors = null; // Page 3 PDF Requirement: Use null instead of empty array
 
   // MongoDB duplicate key error
   if (error.code === 11000) {
@@ -166,11 +171,17 @@ ${'='.repeat(80)}
 
 /**
  * Send error response to client
+ * Page 3 PDF Requirement: Errors field should be null when there are no errors, not empty array
  */
 const sendErrorResponse = (error, res) => {
   const statusCode = error.statusCode || 500;
   const message = error.message || 'Internal server error';
-  const errors = error.errors || [message];
+  
+  // Page 3 PDF Requirement: Errors should be null if no specific errors, not an array with message
+  let errors = null;
+  if (error.errors && Array.isArray(error.errors) && error.errors.length > 0) {
+    errors = error.errors;
+  }
   
   // Don't expose internal error details in production
   const isProduction = process.env.NODE_ENV === 'production';
@@ -178,15 +189,19 @@ const sendErrorResponse = (error, res) => {
     ? 'Internal server error' 
     : message;
   
-  const responseErrors = isProduction && statusCode === 500 
-    ? ['An unexpected error occurred'] 
-    : errors;
+  // Page 3 PDF Requirement: Only set errors array if there are specific validation errors
+  let responseErrors = null;
+  if (errors && errors.length > 0) {
+    responseErrors = isProduction && statusCode === 500 
+      ? ['An unexpected error occurred'] 
+      : errors;
+  }
 
   res.status(statusCode).json(createResponse(
     false,
     responseMessage,
     null,
-    responseErrors
+    responseErrors // This will be null when no specific errors, as per Page 3 PDF requirement
   ));
 };
 

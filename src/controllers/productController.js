@@ -24,7 +24,7 @@ const createProduct = async (req, res) => {
     const productData = { name, description, price, stock, category };
     const validationErrors = validateProduct(productData);
     
-    if (validationErrors.length > 0) {
+    if (validationErrors && validationErrors.length > 0) {
       return res.status(400).json(createResponse(
         false, 
         'Product creation failed', 
@@ -111,7 +111,7 @@ const updateProduct = async (req, res) => {
     // Validate provided fields using User Story 4 validation (same criteria as creation)
     const validationErrors = validateProductUpdate(updateData);
     
-    if (validationErrors.length > 0) {
+    if (validationErrors && validationErrors.length > 0) {
       return res.status(400).json(createResponse(
         false, 
         'Product update failed', 

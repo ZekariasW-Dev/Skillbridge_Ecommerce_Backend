@@ -33,7 +33,7 @@ const register = asyncErrorHandler(async (req, res) => {
   
   // Step 2: Format validation - Validate username format (Page 4 PDF requirement)
   const usernameErrors = validateUsername(username);
-  if (usernameErrors.length > 0) {
+  if (usernameErrors && usernameErrors.length > 0) {
     throw new ValidationError('Registration failed', usernameErrors);
   }
   
@@ -44,7 +44,7 @@ const register = asyncErrorHandler(async (req, res) => {
   
   // Step 4: Format validation - Validate password strength (Page 4 PDF requirement)
   const passwordErrors = validatePassword(password);
-  if (passwordErrors.length > 0) {
+  if (passwordErrors && passwordErrors.length > 0) {
     throw new ValidationError('Registration failed', passwordErrors);
   }
   

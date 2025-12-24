@@ -131,7 +131,7 @@ const handleUploadError = (error, res) => {
 
   let statusCode = 400;
   let message = 'File upload failed';
-  let errors = [];
+  let errors = null; // Page 3 PDF Requirement: Use null instead of empty array
 
   switch (error.code) {
     case 'LIMIT_FILE_SIZE':
