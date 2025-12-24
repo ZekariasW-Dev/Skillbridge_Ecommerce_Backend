@@ -1,4 +1,140 @@
 require('dotenv').config();
+
+/**
+ * Environment Variables Validation
+ * Best Practice: Ensure all necessary secrets are available before starting the server
+ */
+const validateEnvironment = () => {
+  console.log('🔍 Validating environment variables...');
+  
+  const requiredEnvVars = [
+    'MONGODB_URI',
+    'JWT_SECRET'
+  ];
+
+  const optionalEnvVars = [
+    'CLOUDINARY_CLOUD_NAME',
+    'CLOUDINARY_API_KEY', 
+    'CLOUDINARY_API_SECRET',
+    'PORT',
+    'NODE_ENV'
+  ];
+
+  const missingRequired = [];
+  const missingOptional = [];
+  const presentVars = [];
+
+  // Check required environment variables
+  requiredEnvVars.forEach(varName => {
+    if (!process.env[varName] || process.env[varName].trim() === '') {
+      missingRequired.push(varName);
+    } else {
+      presentVars.push(varName);
+    }
+  });
+
+  // Check optional environment variables
+  optionalEnvVars.forEach(varName => {
+    if (!process.env[varName] || process.env[varName].trim() === '') {
+      missingOptional.push(varName);
+    } else {
+      presentVars.push(varName);
+    }
+  });
+
+  // Log validation results
+  console.log(`✅ Present variables (${presentVars.length}):`, presentVars.join(', '));
+  
+  if (missingOptional.length > 0) {
+    console.log(`⚠️  Optional missing (${missingOptional.length}):`, missingOptional.join(', '));
+  }
+
+  // Handle missing required variables
+  if (missingRequired.length > 0) {
+    console.error('❌ Missing required environment variables:');
+    missingRequired.forEach(varName => {
+      console.error(`   • ${varName}`);
+    });
+    console.error('\n💡 Please check your .env file and ensure all required variables are set.');
+    console.error('📋 Required variables:');
+    requiredEnvVars.forEach(varName => {
+      console.error(`   • ${varName} - ${getEnvVarDescription(varName)}`);
+    });
+    process.exit(1);
+  }
+
+  // Validate specific environment variable formats
+  validateSpecificEnvVars();
+
+  console.log('✅ Environment validation completed successfully');
+};
+
+/**
+ * Get description for environment variables
+ */
+const getEnvVarDescription = (varName) => {
+  const descriptions = {
+    'MONGODB_URI': 'MongoDB connection string',
+    'JWT_SECRET': 'JWT signing secret (should be strong and unique)',
+    'CLOUDINARY_CLOUD_NAME': 'Cloudinary cloud name for image uploads',
+    'CLOUDINARY_API_KEY': 'Cloudinary API key',
+    'CLOUDINARY_API_SECRET': 'Cloudinary API secret',
+    'PORT': 'Server port number',
+    'NODE_ENV': 'Node environment (development/production)'
+  };
+  return descriptions[varName] || 'Environment variable';
+};
+
+/**
+ * Validate specific environment variable formats and values
+ */
+const validateSpecificEnvVars = () => {
+  // Validate JWT_SECRET strength
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    console.warn('⚠️  JWT_SECRET should be at least 32 characters long for security');
+  }
+
+  // Validate MONGODB_URI format
+  if (process.env.MONGODB_URI) {
+    if (!process.env.MONGODB_URI.startsWith('mongodb://') && !process.env.MONGODB_URI.startsWith('mongodb+srv://')) {
+      console.error('❌ MONGODB_URI must start with mongodb:// or mongodb+srv://');
+      process.exit(1);
+    }
+  }
+
+  // Validate PORT if provided
+  if (process.env.PORT) {
+    const port = parseInt(process.env.PORT);
+    if (isNaN(port) || port < 1 || port > 65535) {
+      console.error('❌ PORT must be a valid number between 1 and 65535');
+      process.exit(1);
+    }
+  }
+
+  // Validate NODE_ENV if provided
+  if (process.env.NODE_ENV) {
+    const validEnvs = ['development', 'production', 'test'];
+    if (!validEnvs.includes(process.env.NODE_ENV)) {
+      console.warn(`⚠️  NODE_ENV should be one of: ${validEnvs.join(', ')}`);
+    }
+  }
+
+  // Check Cloudinary configuration completeness
+  const cloudinaryVars = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+  const cloudinaryPresent = cloudinaryVars.filter(varName => process.env[varName]);
+  
+  if (cloudinaryPresent.length > 0 && cloudinaryPresent.length < 3) {
+    console.warn('⚠️  Partial Cloudinary configuration detected. For image uploads to work, all Cloudinary variables are needed:');
+    cloudinaryVars.forEach(varName => {
+      const status = process.env[varName] ? '✅' : '❌';
+      console.warn(`   ${status} ${varName}`);
+    });
+  }
+};
+
+// Validate environment before proceeding
+validateEnvironment();
+
 const app = require('./app');
 const db = require('./src/config/db');
 
@@ -16,6 +152,7 @@ const startServer = async () => {
     console.log('🚀 Starting E-commerce API Server...');
     console.log(`📊 Environment: ${NODE_ENV}`);
     console.log(`🔌 Port: ${PORT}`);
+    console.log('🔒 Environment validation: ✅ Passed');
     
     // Initialize database connection
     console.log('🔗 Connecting to database...');
