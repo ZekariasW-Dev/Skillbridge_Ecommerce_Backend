@@ -225,18 +225,19 @@ const createOrder = async (req, res) => {
 };
 
 /**
- * View My Order History endpoint - User Story 10
+ * View My Order History endpoint - User Story 10 & Page 11 PDF Requirements
  * GET /orders
  * 
  * Acceptance Criteria:
  * 1. GET request to /orders retrieves list of user's orders
  * 2. Protected endpoint - only authenticated users can access
  * 3. Filter results to show only orders belonging to authenticated user (userId from JWT)
- * 4. Success: 200 OK with array of order objects (order_id, status, total_price, created_at)
+ * 4. Success: 200 OK with array of order objects (Page 11 PDF: order_id, status, total_price, created_at)
  * 5. Empty array if user has no orders (200 OK)
  * 6. Failure: 401 Unauthorized for unauthenticated users
  * 
- * Page 11 PDF Requirement: created_at (the date the order was placed) must be included
+ * Page 11 PDF Requirement: "Each order object should contain order_id, status, total_price, and created_at"
+ * Note: total_price (PDF field name) is mapped from totalPrice (database field name)
  */
 const getMyOrders = async (req, res) => {
   try {
@@ -245,15 +246,15 @@ const getMyOrders = async (req, res) => {
     // Retrieve orders belonging only to authenticated user (User Story 10 requirement)
     const orders = await Order.findByUserId(userId);
     
-    // Format orders with key summary information (User Story 10 + Page 10 PDF requirement)
-    // Page 10 PDF Requirement: Response should contain order_id, status, total_price, and products
+    // Format orders with key summary information (User Story 10 + Page 11 PDF requirement)
+    // Page 11 PDF Requirement: "Each order object should contain order_id, status, total_price, and created_at"
     const orderHistory = orders.map(order => ({
-      order_id: order.id, // Page 10 PDF Requirement: order_id field
-      status: order.status, // Page 10 PDF Requirement: status field
-      total_price: order.totalPrice, // Page 10 PDF Requirement: total_price field
-      created_at: order.createdAt, // User Story 10 uses 'created_at'
+      order_id: order.id, // Page 11 PDF Requirement: order_id field
+      status: order.status, // Page 11 PDF Requirement: status field
+      total_price: order.totalPrice, // Page 11 PDF Requirement: total_price field (not database totalPrice)
+      created_at: order.createdAt, // Page 11 PDF Requirement: created_at field
       description: order.description,
-      products: order.products || [] // Page 10 PDF Requirement: products field
+      products: order.products || [] // Additional field for order details
     }));
     
     // Return 200 OK with array of orders (User Story 10 requirement)
