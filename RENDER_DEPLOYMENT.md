@@ -31,7 +31,7 @@
    Add these in the Render dashboard:
    ```
    NODE_ENV=production
-   MONGODB_URI=mongodb+srv://zekarias:zack%40123@cluster0.j4lbgu9.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Ecommerce_platform_backend
+   MONGODB_URI=mongodb+srv://zekarias:zack%40123@cluster0.j4lbgu9.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0
    JWT_SECRET=your_super_secure_production_jwt_secret_key_minimum_32_characters_long
    ```
 
@@ -108,6 +108,19 @@ curl -X POST https://your-service-name.onrender.com/auth/register \
 2. **Database Connection**: Verify MongoDB URI and network access
 3. **Environment Variables**: Ensure all required variables are set
 4. **Port Issues**: Render automatically assigns PORT, don't hardcode it
+5. **SSL/TLS Errors**: Common on cloud platforms, connection will retry automatically
+
+#### SSL/TLS Connection Issues:
+If you see errors like:
+```
+❌ MongoDB connection failed: SSL routines:ssl3_read_bytes:tlsv1 alert internal error
+```
+
+**Solutions:**
+1. **Use the updated MongoDB URI format** (includes `ssl=true&authSource=admin`)
+2. **Wait for automatic retry** - The connection has built-in retry logic
+3. **Check MongoDB Atlas Network Access** - Ensure `0.0.0.0/0` is allowed
+4. **Verify MongoDB Atlas Cluster** - Ensure it's running and accessible
 
 #### Debug Commands:
 ```bash

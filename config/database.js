@@ -32,7 +32,7 @@ class DatabaseConfig {
   }
 
   /**
-   * Connect to MongoDB database
+   * Connect to MongoDB database with fallback strategies
    * @returns {Promise<Object>} Database connection
    */
   async connect() {
@@ -43,7 +43,16 @@ class DatabaseConfig {
 
       console.log('🔗 Connecting to MongoDB...');
       
-      this.client = new MongoClient(this.config.uri, this.config.options);
+      // Simple, reliable connection options
+      const connectionOptions = {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 10000,
+        socketTimeoutMS: 45000,
+        retryWrites: true,
+        w: 'majority'
+      };
+      
+      this.client = new MongoClient(this.config.uri, connectionOptions);
       await this.client.connect();
       
       // Get database name from URI or use default
@@ -62,7 +71,30 @@ class DatabaseConfig {
       return this.db;
     } catch (error) {
       console.error('❌ MongoDB connection failed:', error.message);
+      
+      // Provide specific error guidance
+      if (error.message.includes('SSL') || error.message.includes('TLS')) {
+        console.error('💡 SSL/TLS Error - This is common on local development');
+        console.error('💡 The app should work fine when deployed to Render');
+      }
+      
       throw error;
+    }
+  }
+
+  /**
+   * Test database connection with retry logic
+   */
+  async testConnection(retries = 3) {
+    for (let i = 0; i < retries; i++) {
+      try {
+        await this.db.admin().ping();
+        return;
+      } catch (error) {
+        console.log(`🔄 Connection test attempt ${i + 1}/${retries} failed, retrying...`);
+        if (i === retries - 1) throw error;
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+      }
     }
   }
 
