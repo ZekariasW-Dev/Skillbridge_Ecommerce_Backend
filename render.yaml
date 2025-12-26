@@ -11,12 +11,6 @@ services:
       - key: PORT
         generateValue: true
       - key: MONGODB_URI
-        sync: false
+        value: mongodb+srv://zekarias:zack%40123@cluster0.j4lbgu9.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=Cluster0
       - key: JWT_SECRET
-        generateValue: true
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
+        value: b63ce19af849450571f46554fcdadd7410e28b093808b1cea889c2c410bd172245706dcf2967363c4a7193564fd2e898c854df7e2fb045a0ffeea2609a9761db
