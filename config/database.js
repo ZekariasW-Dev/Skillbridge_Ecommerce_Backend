@@ -45,26 +45,44 @@ class DatabaseConfig {
 
       console.log('🔗 Connecting to MongoDB...');
       
-      // Try to connect to MongoDB Atlas
-      const success = await this.tryMongoDBConnection();
+      // In production, try harder to connect to MongoDB
+      const isProduction = config.nodeEnv === 'production';
+      const maxRetries = isProduction ? 5 : 1;
       
-      if (success) {
-        return this.db;
+      for (let retry = 0; retry < maxRetries; retry++) {
+        if (retry > 0) {
+          console.log(`🔄 Retry attempt ${retry}/${maxRetries - 1} for MongoDB connection...`);
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds between retries
+        }
+        
+        const success = await this.tryMongoDBConnection();
+        
+        if (success) {
+          return this.db;
+        }
+      }
+      
+      // If we reach here, all connection attempts failed
+      if (isProduction) {
+        console.error('❌ CRITICAL: MongoDB connection failed in production after all retries');
+        console.error('💡 Check MongoDB Atlas network access and connection string');
+        throw new Error('MongoDB connection failed in production environment');
       } else {
-        // Fallback to mock mode for development
+        // Only use mock mode in development
         console.log('🔄 Falling back to mock database mode for development...');
         return this.initializeMockMode();
       }
     } catch (error) {
       console.error('❌ Database connection failed:', error.message);
       
-      // In development, use mock mode as fallback
-      if (config.nodeEnv === 'development') {
-        console.log('🔄 Using mock database mode for development...');
-        return this.initializeMockMode();
+      // In production, don't fall back to mock mode - throw the error
+      if (config.nodeEnv === 'production') {
+        throw error;
       }
       
-      throw error;
+      // In development, use mock mode as fallback
+      console.log('🔄 Using mock database mode for development...');
+      return this.initializeMockMode();
     }
   }
 
@@ -74,27 +92,39 @@ class DatabaseConfig {
    */
   async tryMongoDBConnection() {
     const connectionStrategies = [
-      // Strategy 1: Standard connection
+      // Strategy 1: Production-optimized connection
       {
         maxPoolSize: 10,
-        serverSelectionTimeoutMS: 8000,
-        socketTimeoutMS: 45000,
-        retryWrites: true,
-        w: 'majority'
-      },
-      // Strategy 2: With explicit TLS
-      {
-        maxPoolSize: 10,
-        serverSelectionTimeoutMS: 8000,
+        serverSelectionTimeoutMS: 15000,
         socketTimeoutMS: 45000,
         retryWrites: true,
         w: 'majority',
-        tls: true
+        ssl: true,
+        authSource: 'admin'
       },
-      // Strategy 3: Minimal settings
+      // Strategy 2: Alternative SSL configuration
+      {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 20000,
+        socketTimeoutMS: 45000,
+        retryWrites: true,
+        w: 'majority',
+        tls: true,
+        tlsInsecure: false
+      },
+      // Strategy 3: Minimal but reliable
       {
         maxPoolSize: 5,
-        serverSelectionTimeoutMS: 10000
+        serverSelectionTimeoutMS: 30000,
+        socketTimeoutMS: 60000,
+        retryWrites: true
+      },
+      // Strategy 4: Legacy compatibility
+      {
+        maxPoolSize: 5,
+        serverSelectionTimeoutMS: 25000,
+        useNewUrlParser: true,
+        useUnifiedTopology: true
       }
     ];
     
@@ -102,7 +132,16 @@ class DatabaseConfig {
       try {
         console.log(`🔄 Trying connection strategy ${i + 1}/${connectionStrategies.length}...`);
         
-        this.client = new MongoClient(this.config.uri, connectionStrategies[i]);
+        // For production, try with modified URI that includes SSL parameters
+        let connectionUri = this.config.uri;
+        if (config.nodeEnv === 'production' && i === 0) {
+          // Add SSL parameters to URI for first strategy in production
+          connectionUri = this.config.uri.includes('?') 
+            ? `${this.config.uri}&ssl=true&authSource=admin`
+            : `${this.config.uri}?ssl=true&authSource=admin`;
+        }
+        
+        this.client = new MongoClient(connectionUri, connectionStrategies[i]);
         await this.client.connect();
         
         // Get database name from URI or use default
