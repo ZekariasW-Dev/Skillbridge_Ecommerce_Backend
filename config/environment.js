@@ -19,9 +19,14 @@ class EnvironmentConfig {
    * Load environment variables
    */
   loadEnvironment() {
-    // Load .env file in development
-    if (process.env.NODE_ENV !== 'production') {
+    // Always try to load .env file, but don't fail if it doesn't exist in production
+    try {
       require('dotenv').config();
+    } catch (error) {
+      // In production, environment variables should be set by the platform
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('⚠️ Could not load .env file:', error.message);
+      }
     }
   }
 
