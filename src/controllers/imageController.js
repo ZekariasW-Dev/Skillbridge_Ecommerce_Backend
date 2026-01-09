@@ -1,5 +1,5 @@
 const Product = require('../models/Product');
-const imageService = require('../services/imageService');
+const cloudinaryService = require('../services/cloudinaryService');
 const { createResponse } = require('../utils/responses');
 const { 
   ValidationError, 
@@ -28,8 +28,8 @@ const uploadProductImage = asyncErrorHandler(async (req, res) => {
     throw new NotFoundError('Product not found');
   }
 
-  // Process and save image
-  const imageResult = await imageService.processAndSaveImage(file, productId);
+  // Process and save image using Cloudinary
+  const imageResult = await cloudinaryService.processAndSaveImage(file, productId);
 
   // Update product with image data
   const updatedProduct = await Product.update(productId, {
@@ -37,8 +37,10 @@ const uploadProductImage = asyncErrorHandler(async (req, res) => {
   });
 
   if (!updatedProduct) {
-    // Clean up uploaded files if database update fails
-    await imageService.deleteImageFiles(imageResult);
+    // Clean up uploaded image if database update fails
+    if (imageResult.cloudinaryPublicId) {
+      await cloudinaryService.deleteImage(imageResult.cloudinaryPublicId);
+    }
     throw new Error('Failed to update product with image data');
   }
 
@@ -47,12 +49,14 @@ const uploadProductImage = asyncErrorHandler(async (req, res) => {
     'Product image uploaded successfully',
     {
       productId,
-      images: imageResult.processedImages,
+      images: imageResult.imageUrls,
+      cloudinaryData: imageResult.cloudinaryData,
       uploadInfo: {
         originalFilename: imageResult.originalFilename,
         originalSize: imageResult.originalSize,
-        processedAt: imageResult.metadata.processedAt,
-        sizesGenerated: Object.keys(imageResult.processedImages).length
+        uploadedAt: imageResult.metadata.uploadedAt,
+        cloudinaryPublicId: imageResult.cloudinaryPublicId,
+        isCloudinary: !imageResult.fallback
       }
     }
   ));
@@ -81,17 +85,18 @@ const uploadProductImages = asyncErrorHandler(async (req, res) => {
     throw new NotFoundError('Product not found');
   }
 
-  // Process all images
+  // Process all images using Cloudinary
   const processedImages = [];
   const errors = [];
 
   for (let i = 0; i < files.length; i++) {
     try {
-      const imageResult = await imageService.processAndSaveImage(files[i], productId);
+      const imageResult = await cloudinaryService.processAndSaveImage(files[i], productId);
       processedImages.push({
         index: i,
         originalFilename: imageResult.originalFilename,
-        images: imageResult.processedImages,
+        imageUrls: imageResult.imageUrls,
+        cloudinaryPublicId: imageResult.cloudinaryPublicId,
         metadata: imageResult.metadata
       });
     } catch (error) {
@@ -116,9 +121,11 @@ const uploadProductImages = asyncErrorHandler(async (req, res) => {
   });
 
   if (!updatedProduct) {
-    // Clean up uploaded files if database update fails
+    // Clean up uploaded images if database update fails
     for (const processedImage of processedImages) {
-      await imageService.deleteImageFiles({ processedImages: processedImage.images });
+      if (processedImage.cloudinaryPublicId) {
+        await cloudinaryService.deleteImage(processedImage.cloudinaryPublicId);
+      }
     }
     throw new Error('Failed to update product with image data');
   }
@@ -154,9 +161,19 @@ const deleteProductImage = asyncErrorHandler(async (req, res) => {
     throw new NotFoundError('Product not found');
   }
 
-  // Delete image files if they exist
+  // Delete images from Cloudinary if they exist
   if (product.images) {
-    await imageService.deleteImageFiles(product.images);
+    if (product.images.cloudinaryPublicId) {
+      // Single image
+      await cloudinaryService.deleteImage(product.images.cloudinaryPublicId);
+    } else if (product.images.images && Array.isArray(product.images.images)) {
+      // Multiple images
+      for (const image of product.images.images) {
+        if (image.cloudinaryPublicId) {
+          await cloudinaryService.deleteImage(image.cloudinaryPublicId);
+        }
+      }
+    }
   }
 
   // Update product to remove image data
@@ -188,22 +205,31 @@ const deleteProductImage = asyncErrorHandler(async (req, res) => {
  * - Public endpoint for configuration info
  */
 const getUploadConfig = asyncErrorHandler(async (req, res) => {
+  const isCloudinaryConfigured = cloudinaryService.isCloudinaryConfigured();
+  
   const config = {
     maxFileSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 5,
     allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
     allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp'],
-    generatedSizes: ['thumbnail', 'medium', 'large'],
-    outputFormat: 'webp',
+    generatedSizes: ['thumbnail', 'medium', 'large', 'original'],
+    outputFormat: isCloudinaryConfigured ? 'auto-optimized' : 'webp',
+    storageProvider: isCloudinaryConfigured ? 'Cloudinary' : 'Local Storage',
+    features: {
+      cloudDelivery: isCloudinaryConfigured,
+      autoOptimization: isCloudinaryConfigured,
+      cdnDelivery: isCloudinaryConfigured,
+      dynamicTransformations: isCloudinaryConfigured
+    },
     sizeConfigurations: {
-      thumbnail: { width: 150, height: 150, fit: 'cover' },
-      medium: { width: 500, height: 500, fit: 'inside' },
-      large: { width: 1200, height: 1200, fit: 'inside' }
+      thumbnail: { width: 150, height: 150, crop: 'fill' },
+      medium: { width: 500, height: 500, crop: 'limit' },
+      large: { width: 1200, height: 1200, crop: 'limit' }
     },
     uploadEndpoints: {
-      singleImage: 'POST /products/:id/image',
-      multipleImages: 'POST /products/:id/images',
-      deleteImages: 'DELETE /products/:id/image'
+      singleImage: 'POST /images/products/:id/image',
+      multipleImages: 'POST /images/products/:id/images',
+      deleteImages: 'DELETE /images/products/:id/image'
     }
   };
 
@@ -224,44 +250,80 @@ const getUploadConfig = asyncErrorHandler(async (req, res) => {
  * - Admin monitoring tool
  */
 const getStorageStats = asyncErrorHandler(async (req, res) => {
-  const stats = await imageService.getStorageStats();
-
-  if (!stats) {
-    throw new Error('Failed to retrieve storage statistics');
-  }
-
-  // Format sizes for readability
-  const formatSize = (bytes) => {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
-
-  const formattedStats = {
-    totalFiles: stats.totalFiles,
-    totalSize: formatSize(stats.totalSize),
-    totalSizeBytes: stats.totalSize,
-    directories: {}
-  };
-
-  for (const [dirName, dirStats] of Object.entries(stats.directories)) {
-    formattedStats.directories[dirName] = {
-      fileCount: dirStats.fileCount,
-      totalSize: formatSize(dirStats.totalSize),
-      totalSizeBytes: dirStats.totalSize,
-      averageSize: formatSize(dirStats.averageSize),
-      averageSizeBytes: dirStats.averageSize
+  const isCloudinaryConfigured = cloudinaryService.isCloudinaryConfigured();
+  
+  let stats;
+  
+  if (isCloudinaryConfigured) {
+    // Get Cloudinary storage stats
+    stats = await cloudinaryService.getStorageStats();
+    
+    if (!stats.success) {
+      throw new Error('Failed to retrieve Cloudinary storage statistics');
+    }
+    
+    const formattedStats = {
+      provider: 'Cloudinary',
+      totalImages: stats.stats.totalImages,
+      totalStorage: formatSize(stats.stats.totalStorage),
+      totalStorageBytes: stats.stats.totalStorage,
+      bandwidth: formatSize(stats.stats.bandwidth),
+      bandwidthBytes: stats.stats.bandwidth,
+      transformations: stats.stats.transformations,
+      plan: stats.stats.plan,
+      lastUpdated: stats.stats.lastUpdated
     };
-  }
+    
+    res.status(200).json(createResponse(
+      true,
+      'Cloudinary storage statistics retrieved successfully',
+      formattedStats
+    ));
+    
+  } else {
+    // Fallback to local storage stats
+    const imageService = require('../services/imageService');
+    stats = await imageService.getStorageStats();
 
-  res.status(200).json(createResponse(
-    true,
-    'Storage statistics retrieved successfully',
-    formattedStats
-  ));
+    if (!stats) {
+      throw new Error('Failed to retrieve local storage statistics');
+    }
+
+    // Format sizes for readability
+    const formattedStats = {
+      provider: 'Local Storage',
+      totalFiles: stats.totalFiles,
+      totalSize: formatSize(stats.totalSize),
+      totalSizeBytes: stats.totalSize,
+      directories: {}
+    };
+
+    for (const [dirName, dirStats] of Object.entries(stats.directories)) {
+      formattedStats.directories[dirName] = {
+        fileCount: dirStats.fileCount,
+        totalSize: formatSize(dirStats.totalSize),
+        totalSizeBytes: dirStats.totalSize,
+        averageSize: formatSize(dirStats.averageSize),
+        averageSizeBytes: dirStats.averageSize
+      };
+    }
+
+    res.status(200).json(createResponse(
+      true,
+      'Local storage statistics retrieved successfully',
+      formattedStats
+    ));
+  }
 });
+
+// Helper function to format file sizes
+const formatSize = (bytes) => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 /**
  * Clean Up Orphaned Images (Admin only)
