@@ -22,8 +22,52 @@ setupProcessHandlers();
 // Apply rate limiting to all requests
 app.use(generalLimiter);
 
-// Middleware
-app.use(cors());
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return callback(null, true);
+    }
+    
+    // Allow Netlify domains
+    if (origin.includes('netlify.app') || origin.includes('netlify.com')) {
+      return callback(null, true);
+    }
+    
+    // Allow your custom domain if you have one
+    // if (origin === 'https://yourdomain.com') {
+    //   return callback(null, true);
+    // }
+    
+    // For production, you might want to be more restrictive
+    if (process.env.NODE_ENV === 'production') {
+      // Add your specific frontend domains here
+      const allowedOrigins = [
+        'https://skillbridge-ecommerce.netlify.app', // Replace with your actual Netlify URL
+        'https://your-custom-domain.com' // Add your custom domain if you have one
+      ];
+      
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      
+      // For now, allow all origins in production (you can restrict this later)
+      return callback(null, true);
+    }
+    
+    // Allow all origins in development
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
