@@ -25,46 +25,52 @@ app.use(generalLimiter);
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    console.log(`🌐 CORS request from origin: ${origin}`);
     
-    // Allow localhost for development
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ Allowing request with no origin');
       return callback(null, true);
     }
     
-    // Allow Netlify domains
+    // Allow localhost for development
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      console.log('✅ Allowing localhost origin');
+      return callback(null, true);
+    }
+    
+    // Allow Netlify domains (any subdomain of netlify.app or netlify.com)
     if (origin.includes('netlify.app') || origin.includes('netlify.com')) {
+      console.log('✅ Allowing Netlify origin');
+      return callback(null, true);
+    }
+    
+    // Allow Vercel domains (in case you switch platforms)
+    if (origin.includes('vercel.app')) {
+      console.log('✅ Allowing Vercel origin');
       return callback(null, true);
     }
     
     // Allow your custom domain if you have one
     // if (origin === 'https://yourdomain.com') {
+    //   console.log('✅ Allowing custom domain');
     //   return callback(null, true);
     // }
     
-    // For production, you might want to be more restrictive
+    // For production, be more permissive for now (you can restrict later)
     if (process.env.NODE_ENV === 'production') {
-      // Add your specific frontend domains here
-      const allowedOrigins = [
-        'https://skillbridge-ecommerce.netlify.app', // Replace with your actual Netlify URL
-        'https://your-custom-domain.com' // Add your custom domain if you have one
-      ];
-      
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      
-      // For now, allow all origins in production (you can restrict this later)
+      console.log('✅ Allowing all origins in production (for now)');
       return callback(null, true);
     }
     
     // Allow all origins in development
+    console.log('✅ Allowing all origins in development');
     callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200 // Some legacy browsers (IE11, various SmartTVs) choke on 204
 };
 
 app.use(cors(corsOptions));
@@ -94,6 +100,20 @@ app.get('/health', (req, res) => {
     message: 'E-commerce API is running',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// CORS test endpoint
+app.get('/cors-test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'CORS is working correctly!',
+    origin: req.headers.origin || 'No origin header',
+    timestamp: new Date().toISOString(),
+    headers: {
+      'user-agent': req.headers['user-agent'],
+      'referer': req.headers.referer || 'No referer'
+    }
   });
 });
 
