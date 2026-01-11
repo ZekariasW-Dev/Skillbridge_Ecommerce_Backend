@@ -1,42 +1,32 @@
-const { v4: uuidv4 } = require('uuid');
+const { ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
 const db = require('../../config/database');
 
 class User {
   /**
    * Create a new user
-   * @param {object} userData - User data object
-   * @param {string} userData.username - Username (alphanumeric only)
-   * @param {string} userData.email - Email address
-   * @param {string} userData.password - Plain text password (will be hashed)
-   * @param {string} userData.role - User role (default: 'user')
-   * @returns {object} - Created user object without password
    */
   static async create(userData) {
-    const { username, email, password, role = 'user' } = userData;
-    const id = uuidv4();
+    const { username, email, password, firstName, lastName, role = 'user' } = userData;
     const hashedPassword = await bcrypt.hash(password, 10);
     
     const user = {
-      id,
       username,
       email,
       password: hashedPassword,
+      firstName,
+      lastName,
       role,
       createdAt: new Date()
     };
     
-    await db.getDb().collection('users').insertOne(user);
-    
-    // Return user without password (sensitive information must never be returned)
+    const result = await db.getDb().collection('users').insertOne(user);
     const { password: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return { _id: result.insertedId, ...userWithoutPassword };
   }
 
   /**
    * Find user by email
-   * @param {string} email - Email address
-   * @returns {object|null} - User object or null if not found
    */
   static async findByEmail(email) {
     return await db.getDb().collection('users').findOne({ email });
@@ -44,8 +34,6 @@ class User {
 
   /**
    * Find user by username
-   * @param {string} username - Username
-   * @returns {object|null} - User object or null if not found
    */
   static async findByUsername(username) {
     return await db.getDb().collection('users').findOne({ username });
@@ -53,47 +41,86 @@ class User {
 
   /**
    * Find user by ID
-   * @param {string} id - User UUID
-   * @returns {object|null} - User object without password or null if not found
    */
   static async findById(id) {
-    return await db.getDb().collection('users').findOne(
-      { id }, 
-      { projection: { password: 0 } }
-    );
+    try {
+      return await db.getDb().collection('users').findOne({ _id: new ObjectId(id) });
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
-   * Validate password against stored hash
-   * @param {string} plainPassword - Plain text password
-   * @param {string} hashedPassword - Stored hashed password
-   * @returns {boolean} - True if password matches
+   * Verify password
    */
-  static async validatePassword(plainPassword, hashedPassword) {
+  static async verifyPassword(plainPassword, hashedPassword) {
     return await bcrypt.compare(plainPassword, hashedPassword);
   }
 
   /**
-   * Remove sensitive information from user object for JSON serialization
-   * Page 4 PDF Requirement: Sensitive information must never be returned in API response
-   * @param {object} user - User object
-   * @returns {object} - User object without sensitive fields
+   * Update user role
    */
-  static toSafeObject(user) {
-    if (!user) return null;
-    
-    const { password, ...safeUser } = user;
-    return safeUser;
+  static async updateRole(id, role) {
+    try {
+      const result = await db.getDb().collection('users').updateOne(
+        { _id: new ObjectId(id) },
+        { $set: { role, updatedAt: new Date() } }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
-   * Transform user object for JSON response (removes password)
-   * This method ensures passwords are never accidentally included in responses
-   * @param {object} user - User object
-   * @returns {object} - Safe user object for API responses
+   * Add product to favorites
    */
-  static toJSON(user) {
-    return User.toSafeObject(user);
+  static async addToFavorites(userId, productId) {
+    try {
+      const result = await db.getDb().collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { 
+          $addToSet: { favorites: new ObjectId(productId) },
+          $set: { updatedAt: new Date() }
+        }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Remove product from favorites
+   */
+  static async removeFromFavorites(userId, productId) {
+    try {
+      const result = await db.getDb().collection('users').updateOne(
+        { _id: new ObjectId(userId) },
+        { 
+          $pull: { favorites: new ObjectId(productId) },
+          $set: { updatedAt: new Date() }
+        }
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get user favorites
+   */
+  static async getFavorites(userId) {
+    try {
+      const user = await db.getDb().collection('users').findOne(
+        { _id: new ObjectId(userId) },
+        { projection: { favorites: 1 } }
+      );
+      return user?.favorites || [];
+    } catch (error) {
+      return [];
+    }
   }
 }
 

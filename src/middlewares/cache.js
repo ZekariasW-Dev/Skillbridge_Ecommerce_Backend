@@ -86,10 +86,15 @@ const cacheProductList = cacheMiddleware(
     const pageSize = parseInt(req.query.limit || req.query.pageSize) || 10;
     const search = req.query.search || '';
     const category = req.query.category || '';
-    const sortBy = req.query.sortBy || '';
-    const sortOrder = req.query.sortOrder || '';
+    const sort = req.query.sort || '';
     
-    return cacheService.generateProductListKey(page, pageSize, search, category, sortBy, sortOrder);
+    return cacheService.generateKey('products', 'list', {
+      page,
+      pageSize,
+      ...(search && { search }),
+      ...(category && { category }),
+      ...(sort && { sort })
+    });
   }
 );
 
@@ -116,11 +121,15 @@ const cacheSearchResults = cacheMiddleware(
     const pageSize = parseInt(req.query.limit || req.query.pageSize) || 10;
     const search = req.query.search || '';
     const category = req.query.category || '';
-    const sortBy = req.query.sortBy || '';
-    const sortOrder = req.query.sortOrder || '';
+    const sort = req.query.sort || '';
     
-    // Use same key as product list since search is part of product listing
-    return cacheService.generateProductListKey(page, pageSize, search, category, sortBy, sortOrder);
+    return cacheService.generateKey('products', 'list', {
+      page,
+      pageSize,
+      ...(search && { search }),
+      ...(category && { category }),
+      ...(sort && { sort })
+    });
   }
 );
 

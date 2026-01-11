@@ -65,22 +65,21 @@ const register = asyncErrorHandler(async (req, res) => {
   const user = await User.create({ 
     username: username.trim(), 
     email: email.toLowerCase().trim(), 
-    password 
+    password,
+    firstName: req.body.firstName || '',
+    lastName: req.body.lastName || ''
   });
   
   // Step 8: Return success response (201 Created) without sensitive information
-  // Page 4 PDF Requirement: "Upon successful registration, the API should return a 201 Created status code and a success message"
-  // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(201).json(createResponse(
     true, 
-    'User registered successfully', // Page 4 PDF: Message must contain "Success"
+    'User registered successfully',
     {
-      id: user.id,
+      _id: user._id,
       username: user.username,
       email: user.email,
       role: user.role,
       createdAt: user.createdAt
-      // Note: password is explicitly excluded for security (Page 4 PDF requirement)
     }
   ));
 });
@@ -117,16 +116,16 @@ const login = asyncErrorHandler(async (req, res) => {
   }
   
   // Authentication Process: Compare submitted password against stored hashed password
-  const isValidPassword = await User.validatePassword(password, user.password);
+  const isValidPassword = await User.verifyPassword(password, user.password);
   if (!isValidPassword) {
     throw new AuthenticationError('Invalid credentials');
   }
   
   // Successful Login: Generate JWT with essential, non-sensitive user information
   const jwtPayload = {
-    userId: user.id,
+    userId: user._id.toString(),
     username: user.username,
-    role: user.role || 'user' // Default role if not set
+    role: user.role || 'user'
   };
   
   const token = jwt.sign(
@@ -136,14 +135,13 @@ const login = asyncErrorHandler(async (req, res) => {
   );
   
   // Return 200 OK with JWT for client to use in subsequent requests
-  // Page 4 PDF Requirement: Sensitive information must never be returned in API response
   res.status(200).json(createResponse(
     true, 
     'Login successful', 
     {
       token,
       user: {
-        id: user.id,
+        _id: user._id,
         username: user.username,
         email: user.email,
         role: user.role || 'user'

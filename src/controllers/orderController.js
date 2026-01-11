@@ -140,7 +140,7 @@ const createOrder = async (req, res) => {
       // Page 2 PDF: Order Table includes Description: string field
       // Page 10 PDF: Description can be user-provided or auto-generated
       const order = await Order.create({
-        userId: userId,  // Use userId for consistency with tests
+        UserId: userId,  // Use UserId for consistency with Order model (Page 2 PDF requirement)
         description: orderDescription, // Page 2 & 10 PDF: Description field implementation
         totalPrice: Math.round(totalPrice * 100) / 100, // Round to 2 decimal places
         status: 'pending', // Default status as per User Story 9
@@ -238,7 +238,7 @@ const getMyOrders = async (req, res) => {
     const userId = req.user.userId; // From JWT token (authenticated user)
     
     // Retrieve orders belonging only to authenticated user (User Story 10 requirement)
-    const orders = await Order.findByUserId(userId);
+    const orders = await Order.findByUserId(userId); // userId from JWT will be used as UserId parameter
     
     // Format orders with key summary information (User Story 10 + Page 11 PDF requirement)
     // Page 11 PDF Requirement: "Each order object should contain order_id, status, total_price, and created_at"
@@ -274,7 +274,82 @@ const getMyOrders = async (req, res) => {
   }
 };
 
+/**
+ * Update Order Status endpoint - Admin functionality
+ * PATCH /orders/:id/status
+ * 
+ * Acceptance Criteria:
+ * 1. PATCH request to update order status
+ * 2. Protected endpoint - only authenticated Admin users can access
+ * 3. Valid statuses: pending, processing, shipped, delivered, cancelled
+ * 4. Success: 200 OK with updated order
+ * 5. Failure: 404 Not Found if order doesn't exist, 400 Bad Request for invalid status
+ */
+const updateOrderStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    // Validate status
+    const validStatuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json(createResponse(
+        false,
+        'Invalid order status',
+        null,
+        [`Status must be one of: ${validStatuses.join(', ')}`]
+      ));
+    }
+    
+    // Find and update order
+    const order = await Order.findById(id);
+    if (!order) {
+      return res.status(404).json(createResponse(
+        false,
+        'Order not found',
+        null,
+        ['Order with the specified ID does not exist']
+      ));
+    }
+    
+    // Update order status
+    const updatedOrder = await Order.updateStatus(id, status.toLowerCase());
+    
+    if (updatedOrder) {
+      res.status(200).json(createResponse(
+        true,
+        'Order status updated successfully',
+        {
+          order_id: updatedOrder.id,
+          status: updatedOrder.status,
+          total_price: updatedOrder.totalPrice,
+          created_at: updatedOrder.createdAt,
+          description: updatedOrder.description,
+          products: updatedOrder.products || []
+        }
+      ));
+    } else {
+      res.status(500).json(createResponse(
+        false,
+        'Failed to update order status',
+        null,
+        ['Order status update failed']
+      ));
+    }
+    
+  } catch (error) {
+    console.error('Update order status error:', error);
+    res.status(500).json(createResponse(
+      false,
+      'Internal server error',
+      null,
+      ['Failed to update order status']
+    ));
+  }
+};
+
 module.exports = {
   createOrder,
-  getMyOrders
+  getMyOrders,
+  updateOrderStatus
 };

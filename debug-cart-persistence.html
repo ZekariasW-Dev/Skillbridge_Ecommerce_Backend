@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cart Persistence Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .step { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        button { margin: 5px; padding: 5px 10px; }
+        pre { background: #f8f9fa; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Cart Persistence Debug Tool</h1>
+    
+    <div class="step">
+        <h3>Step 1: Test Basic localStorage</h3>
+        <button onclick="testBasicStorage()">Test Basic Storage</button>
+        <div id="basic-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 2: Simulate Cart Operations</h3>
+        <button onclick="addTestItems()">Add Test Items</button>
+        <button onclick="loadCart()">Load Cart</button>
+        <button onclick="clearCart()">Clear Cart</button>
+        <div id="cart-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 3: Monitor localStorage Changes</h3>
+        <button onclick="startMonitoring()">Start Monitoring</button>
+        <button onclick="stopMonitoring()">Stop Monitoring</button>
+        <div id="monitor-result"></div>
+    </div>
+
+    <div class="step">
+        <h3>Step 4: Simulate Page Refresh</h3>
+        <button onclick="simulateRefresh()">Simulate Refresh</button>
+        <div id="refresh-result"></div>
+    </div>
+
+    <script>
+        let monitorInterval;
+        let lastCartValue = null;
+
+        function log(elementId, message, isError = false) {
+            const element = document.getElementById(elementId);
+            const className = isError ? 'error' : 'success';
+            element.innerHTML = `<div class="${className}">${message}</div>`;
+        }
+
+        function testBasicStorage() {
+            try {
+                // Test if localStorage is available
+                localStorage.setItem('test', 'hello');
+                const value = localStorage.getItem('test');
+                localStorage.removeItem('test');
+                
+                if (value === 'hello') {
+                    log('basic-result', '✅ localStorage is working correctly');
+                } else {
+                    log('basic-result', '❌ localStorage read/write failed', true);
+                }
+            } catch (error) {
+                log('basic-result', `❌ localStorage error: ${error.message}`, true);
+            }
+        }
+
+        function addTestItems() {
+            const testCart = [
+                { _id: '1', name: 'Test Product 1', price: 10.99, quantity: 2 },
+                { _id: '2', name: 'Test Product 2', price: 25.50, quantity: 1 }
+            ];
+            
+            localStorage.setItem('cart', JSON.stringify(testCart));
+            log('cart-result', `✅ Added ${testCart.length} test items to cart`);
+        }
+
+        function loadCart() {
+            try {
+                const savedCart = localStorage.getItem('cart');
+                if (savedCart) {
+                    const cart = JSON.parse(savedCart);
+                    log('cart-result', `✅ Loaded cart with ${cart.length} items:<pre>${JSON.stringify(cart, null, 2)}</pre>`);
+                } else {
+                    log('cart-result', '❌ No cart found in localStorage', true);
+                }
+            } catch (error) {
+                log('cart-result', `❌ Error loading cart: ${error.message}`, true);
+            }
+        }
+
+        function clearCart() {
+            localStorage.removeItem('cart');
+            log('cart-result', '🗑️ Cart cleared from localStorage');
+        }
+
+        function startMonitoring() {
+            lastCartValue = localStorage.getItem('cart');
+            log('monitor-result', '🔍 Started monitoring localStorage changes...');
+            
+            monitorInterval = setInterval(() => {
+                const currentCart = localStorage.getItem('cart');
+                if (currentCart !== lastCartValue) {
+                    const timestamp = new Date().toLocaleTimeString();
+                    log('monitor-result', `🔄 [${timestamp}] Cart changed:<br>From: ${lastCartValue || 'null'}<br>To: ${currentCart || 'null'}`);
+                    lastCartValue = currentCart;
+                }
+            }, 100);
+        }
+
+        function stopMonitoring() {
+            if (monitorInterval) {
+                clearInterval(monitorInterval);
+                log('monitor-result', '⏹️ Stopped monitoring');
+            }
+        }
+
+        function simulateRefresh() {
+            // Save current cart
+            const currentCart = localStorage.getItem('cart');
+            
+            // Simulate what happens on page load
+            setTimeout(() => {
+                const afterRefreshCart = localStorage.getItem('cart');
+                
+                if (currentCart === afterRefreshCart) {
+                    log('refresh-result', '✅ Cart persisted through simulated refresh');
+                } else {
+                    log('refresh-result', `❌ Cart changed during refresh:<br>Before: ${currentCart}<br>After: ${afterRefreshCart}`, true);
+                }
+            }, 100);
+        }
+
+        // Auto-run basic test on load
+        window.onload = () => {
+            testBasicStorage();
+            loadCart();
+        };
+    </script>
+</body>
+</html>

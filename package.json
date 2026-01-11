@@ -25,7 +25,13 @@
     "test-error-handling": "node test-error-handling.js",
     "test-duplicate-check": "node test-duplicate-check.js",
     "test-image-upload": "node test-image-upload.js",
-    "test-caching": "node test-caching.js"
+    "test-caching": "node test-caching.js",
+    "build": "npm install",
+    "start:prod": "NODE_ENV=production node server.js",
+    "deploy:render": "echo \"Push to GitHub and deploy via Render dashboard\"",
+    "deploy:vercel": "vercel --prod",
+    "populate:prod": "node populate-ethiopian-and-global-products.js",
+    "create-admin:prod": "node create-admin-user.js"
   },
   "dependencies": {
     "axios": "^1.13.2",

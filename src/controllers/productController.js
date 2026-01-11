@@ -197,12 +197,14 @@ const updateProduct = async (req, res) => {
  */
 const getAllProducts = async (req, res) => {
   try {
-    // Parse pagination parameters (User Story 5 requirements)
+    // Parse pagination parameters
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.limit || req.query.pageSize) || 10;
     
-    // Parse search parameter (User Story 6 requirement)
+    // Parse filter parameters
     const search = req.query.search || '';
+    const category = req.query.category || '';
+    const sort = req.query.sort || '';
     
     // Validate pagination parameters
     if (page < 1) {
@@ -223,36 +225,56 @@ const getAllProducts = async (req, res) => {
       ));
     }
     
-    // Get products with pagination and optional search (User Stories 5 & 6)
-    const result = await Product.findAll(page, pageSize, search);
+    // Get products with all filters applied
+    const result = await Product.findAll(page, pageSize, search, category, sort);
     
-    // Format products to include essential information (User Story 5 requirement)
+    // Format products to include essential information
     const formattedProducts = result.products.map(product => ({
-      id: product.id,
+      _id: product._id,
       name: product.name,
       description: product.description,
       price: product.price,
       stock: product.stock,
       category: product.category,
+      images: product.images,
+      brand: product.brand,
+      rating: product.rating,
+      tags: product.tags,
+      sku: product.sku,
+      specifications: product.specifications,
       createdAt: product.createdAt
     }));
     
-    // Determine response message based on search (User Story 6)
+    // Build response message
     let message = 'Products retrieved successfully';
-    if (search && search.trim().length > 0) {
-      message = `Products matching "${search.trim()}" retrieved successfully`;
+    const filters = [];
+    if (search && search.trim().length > 0) filters.push(`search: "${search.trim()}"`);
+    if (category && category.trim().length > 0) filters.push(`category: "${category}"`);
+    if (sort) filters.push(`sorted by: "${sort}"`);
+    
+    if (filters.length > 0) {
+      message = `Products retrieved with filters: ${filters.join(', ')}`;
     }
     
-    // Return User Stories 5 & 6 compliant response format
-    // totalProducts reflects search results count (User Story 6 requirement)
-    res.status(200).json(createProductListResponse(
-      true,
+    // Calculate pagination info
+    const totalPages = Math.ceil(result.totalSize / pageSize);
+    
+    // Return response with pagination info
+    res.status(200).json({
+      success: true,
       message,
-      formattedProducts,
-      page,
-      pageSize,
-      result.totalSize
-    ));
+      products: formattedProducts,
+      pagination: {
+        currentPage: page,
+        pageSize,
+        totalPages,
+        totalSize: result.totalSize,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1
+      },
+      totalSize: result.totalSize, // For backward compatibility
+      totalPages // For backward compatibility
+    });
     
   } catch (error) {
     console.error('Get products error:', error);
@@ -303,19 +325,18 @@ const getProductById = async (req, res) => {
       ));
     }
     
-    // Return 200 OK with complete product object (User Story 7 requirement)
-    // Include all product details: id, name, description, price, stock, category
+    // Return 200 OK with complete product object
     res.status(200).json(createResponse(
       true, 
       'Product details retrieved successfully', 
       {
-        id: product.id,
+        _id: product._id,
         name: product.name,
         description: product.description,
         price: product.price,
         stock: product.stock,
         category: product.category,
-        userId: product.UserID,  // Page 2 PDF Requirement: UserID field
+        userId: product.userId,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt
       }

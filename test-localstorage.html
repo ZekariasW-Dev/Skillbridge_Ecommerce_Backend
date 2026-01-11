@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LocalStorage Test</title>
+</head>
+<body>
+    <h1>LocalStorage Test</h1>
+    <button onclick="saveCart()">Save Test Cart</button>
+    <button onclick="loadCart()">Load Cart</button>
+    <button onclick="clearCart()">Clear Cart</button>
+    <div id="output"></div>
+
+    <script>
+        function saveCart() {
+            const testCart = [
+                { _id: '1', name: 'Test Product 1', price: 10.99, quantity: 2 },
+                { _id: '2', name: 'Test Product 2', price: 25.50, quantity: 1 }
+            ];
+            localStorage.setItem('cart', JSON.stringify(testCart));
+            document.getElementById('output').innerHTML = '<p>✅ Cart saved to localStorage</p>';
+        }
+
+        function loadCart() {
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                const cart = JSON.parse(savedCart);
+                document.getElementById('output').innerHTML = 
+                    '<p>✅ Cart loaded:</p><pre>' + JSON.stringify(cart, null, 2) + '</pre>';
+            } else {
+                document.getElementById('output').innerHTML = '<p>❌ No cart found in localStorage</p>';
+            }
+        }
+
+        function clearCart() {
+            localStorage.removeItem('cart');
+            document.getElementById('output').innerHTML = '<p>🗑️ Cart cleared from localStorage</p>';
+        }
+
+        // Auto-load on page load
+        window.onload = loadCart;
+    </script>
+</body>
+</html>

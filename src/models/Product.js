@@ -1,137 +1,151 @@
-const { v4: uuidv4 } = require('uuid');
+const { ObjectId } = require('mongodb');
 const db = require('../../config/database');
 
 class Product {
   /**
-   * Create a new product (Page 2 PDF Requirement: Must include UserID)
-   * @param {object} productData - Product data object
-   * @param {string} productData.name - Product name
-   * @param {string} productData.description - Product description
-   * @param {number} productData.price - Product price
-   * @param {number} productData.stock - Product stock quantity
-   * @param {string} productData.category - Product category
-   * @param {string} productData.UserID - User ID (foreign key) - Page 2 PDF Requirement
-   * @param {object} productData.images - Product images data (optional)
-   * @returns {object} - Created product object
+   * Create a new product
    */
   static async create(productData) {
-    const { name, description, price, stock, category, UserID, images = null } = productData;
-    const id = uuidv4();
+    const { name, description, price, stock, category, userId } = productData;
     
     const product = {
-      id,
       name,
       description,
-      price,
-      stock,
+      price: parseFloat(price),
+      stock: parseInt(stock),
       category,
-      UserID,  // Page 2 PDF Requirement: UserID field (capitalized)
-      images,
-      createdAt: new Date()
+      userId,
+      createdAt: new Date(),
+      updatedAt: new Date()
     };
     
-    await db.getDb().collection('products').insertOne(product);
-    
-    return product;
+    const result = await db.getDb().collection('products').insertOne(product);
+    return { _id: result.insertedId, ...product };
   }
 
   /**
    * Find product by ID
-   * @param {string} id - Product UUID
-   * @returns {object|null} - Product object or null if not found
    */
   static async findById(id) {
-    return await db.getDb().collection('products').findOne({ id });
+    try {
+      return await db.getDb().collection('products').findOne({ _id: new ObjectId(id) });
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
-   * Find all products with pagination and optional search (User Stories 5 & 6)
-   * @param {number} page - Page number (default: 1)
-   * @param {number} limit - Items per page (default: 10)
-   * @param {string} search - Search term for product name (optional, User Story 6)
-   * @returns {object} - Object containing products array and total count
+   * Find all products with pagination, search, category filter, and sorting
    */
-  static async findAll(page = 1, limit = 10, search = '') {
+  static async findAll(page = 1, limit = 10, search = '', category = '', sort = '') {
     const skip = (page - 1) * limit;
     
-    // Build query based on search parameter (User Story 6)
+    // Build query
     let query = {};
+    
+    // Search filter
     if (search && search.trim().length > 0) {
-      // Case-insensitive, partial-match (substring) search against product name
       query.name = { $regex: search.trim(), $options: 'i' };
     }
     
-    // Get products for current page with search filter
+    // Category filter
+    if (category && category.trim().length > 0) {
+      query.category = category.trim();
+    }
+    
+    // Build sort object
+    let sortObj = { createdAt: -1 }; // Default sort by newest
+    
+    if (sort) {
+      switch (sort) {
+        case 'price_asc':
+          sortObj = { price: 1 };
+          break;
+        case 'price_desc':
+          sortObj = { price: -1 };
+          break;
+        case 'name_asc':
+          sortObj = { name: 1 };
+          break;
+        case 'name_desc':
+          sortObj = { name: -1 };
+          break;
+        case 'rating_desc':
+          sortObj = { 'rating.average': -1 };
+          break;
+        default:
+          sortObj = { createdAt: -1 };
+      }
+    }
+    
+    // Get products with filters and sorting
     const products = await db.getDb().collection('products')
       .find(query)
+      .sort(sortObj)
       .skip(skip)
       .limit(limit)
-      .sort({ createdAt: -1 }) // Most recent first
       .toArray();
     
-    // Get total count of products matching search criteria
-    // (User Story 6: totalProducts should reflect search results, not all products)
+    // Get total count with filters applied
     const totalSize = await db.getDb().collection('products').countDocuments(query);
     
-    return {
-      products,
-      totalSize
-    };
+    return { products, totalSize };
   }
 
   /**
    * Update product by ID
-   * @param {string} id - Product UUID
-   * @param {object} updateData - Data to update
-   * @returns {object|null} - Updated product object or null if not found
    */
   static async update(id, updateData) {
-    const result = await db.getDb().collection('products').findOneAndUpdate(
-      { id },
-      { $set: { ...updateData, updatedAt: new Date() } },
-      { returnDocument: 'after' }
-    );
-    
-    return result;
+    try {
+      const result = await db.getDb().collection('products').findOneAndUpdate(
+        { _id: new ObjectId(id) },
+        { $set: { ...updateData, updatedAt: new Date() } },
+        { returnDocument: 'after' }
+      );
+      return result;
+    } catch (error) {
+      return null;
+    }
   }
 
   /**
    * Delete product by ID
-   * @param {string} id - Product UUID
-   * @returns {boolean} - True if product was deleted
    */
   static async delete(id) {
-    const result = await db.getDb().collection('products').deleteOne({ id });
-    return result.deletedCount > 0;
+    try {
+      const result = await db.getDb().collection('products').deleteOne({ _id: new ObjectId(id) });
+      return result.deletedCount > 0;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
-   * Update product stock (decrease by quantity)
-   * @param {string} productId - Product UUID
-   * @param {number} quantity - Quantity to decrease
-   * @param {object} session - MongoDB session for transactions
-   * @returns {boolean} - True if stock was updated successfully
+   * Update product stock
    */
   static async updateStock(productId, quantity, session = null) {
-    const options = session ? { session } : {};
-    
-    const result = await db.getDb().collection('products').updateOne(
-      { id: productId, stock: { $gte: quantity } },
-      { $inc: { stock: -quantity } },
-      options
-    );
-    
-    return result.modifiedCount > 0;
+    try {
+      const options = session ? { session } : {};
+      const result = await db.getDb().collection('products').updateOne(
+        { _id: new ObjectId(productId), stock: { $gte: quantity } },
+        { $inc: { stock: -quantity } },
+        options
+      );
+      return result.modifiedCount > 0;
+    } catch (error) {
+      return false;
+    }
   }
 
   /**
-   * Find product by ID with session (for transactions)
-   * @param {string} id - Product UUID
-   * @param {object} session - MongoDB session
-   * @returns {object|null} - Product object or null if not found
+   * Find product by ID with session
    */
   static async findByIdWithSession(id, session) {
-    return await db.getDb().collection('products').findOne({ id }, { session });
+    try {
+      return await db.getDb().collection('products').findOne({ _id: new ObjectId(id) }, { session });
+    } catch (error) {
+      return null;
+    }
   }
 }
 

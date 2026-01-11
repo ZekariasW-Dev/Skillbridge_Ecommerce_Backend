@@ -62,6 +62,30 @@ class Order {
   static async getOrderWithProducts(orderId) {
     return await db.getDb().collection('orders').findOne({ id: orderId });
   }
+
+  /**
+   * Update order status
+   * @param {string} orderId - Order UUID
+   * @param {string} status - New status
+   * @returns {object|null} - Updated order object or null if not found
+   */
+  static async updateStatus(orderId, status) {
+    try {
+      const result = await db.getDb().collection('orders').findOneAndUpdate(
+        { id: orderId },
+        { 
+          $set: { 
+            status: status,
+            updatedAt: new Date()
+          }
+        },
+        { returnDocument: 'after' }
+      );
+      return result;
+    } catch (error) {
+      return null;
+    }
+  }
 }
 
 module.exports = Order;
